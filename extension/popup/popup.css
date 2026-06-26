@@ -1,0 +1,419 @@
+:root {
+  color-scheme: dark;
+  --ink: #f7f2e8;
+  --soft: #c9cec2;
+  --muted: #8d978d;
+  --bg: #080a09;
+  --panel: #121714;
+  --panel-2: #18211d;
+  --line: #2d3932;
+  --field: #0c1110;
+  --accent: #d8ff63;
+  --accent-ink: #14200b;
+  --cyan: #87e6c1;
+  --amber: #ffd166;
+  --danger: #ff8b78;
+  --shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  min-height: 560px;
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(145deg, rgba(216, 255, 99, 0.13), transparent 28%),
+    linear-gradient(205deg, rgba(135, 230, 193, 0.12), transparent 34%),
+    var(--bg);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.shell {
+  padding: 14px;
+}
+
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px 12px;
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 24px !important;
+  height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 7px;
+  box-shadow: 0 10px 26px rgba(132, 98, 255, 0.28);
+}
+
+.kicker,
+.subtle,
+.status,
+label,
+.panel-title span,
+dt,
+.history-item span,
+.empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kicker {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: 15px;
+}
+
+.chip,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.chip {
+  min-width: 70px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+}
+
+.chip.ok,
+.badge {
+  color: #06130d;
+  background: var(--cyan);
+  border-color: transparent;
+}
+
+.chip.warn {
+  color: #1b1302;
+  background: var(--amber);
+  border-color: transparent;
+}
+
+.chip.muted {
+  color: var(--soft);
+  background: var(--panel-2);
+}
+
+.panel,
+.account-card {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.compact {
+  padding: 12px;
+}
+
+.panel-title,
+.account-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-title {
+  margin-bottom: 11px;
+}
+
+label {
+  display: block;
+  margin: 0 0 6px;
+}
+
+input {
+  width: 100%;
+  height: 40px;
+  margin: 0 0 12px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: none;
+  color: var(--ink);
+  background: var(--field);
+  font: inherit;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(216, 255, 99, 0.16);
+}
+
+button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: #1e2823;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.primary {
+  width: 100%;
+  color: var(--accent-ink);
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.danger {
+  width: 100%;
+  color: var(--danger);
+}
+
+.inline {
+  display: grid;
+  grid-template-columns: 1fr 74px;
+  gap: 8px;
+}
+
+.inline input {
+  margin-bottom: 0;
+}
+
+.email {
+  max-width: 214px;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.badge {
+  min-width: 82px;
+  padding: 0 9px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tab {
+  min-height: 34px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--field);
+}
+
+.tab.active {
+  color: var(--accent-ink);
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.progress {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--field);
+}
+
+.bridge-hero {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(216, 255, 99, 0.13), rgba(135, 230, 193, 0.07)),
+    var(--field);
+}
+
+.bridge-hero strong {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.bridge-hero span {
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.progress span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--accent));
+  transition: width 180ms ease;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.metrics div,
+.diagnostic-row,
+.history-item,
+.lease-list div {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--field);
+}
+
+.metrics div {
+  min-height: 58px;
+  padding: 9px;
+}
+
+.metrics span,
+.metrics b,
+dd {
+  display: block;
+}
+
+.metrics b {
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.lease-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.lease-list div {
+  padding: 9px;
+}
+
+dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.actions.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.history-list,
+.diagnostic-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-item,
+.diagnostic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 9px;
+}
+
+.history-item strong {
+  display: block;
+  font-size: 13px;
+}
+
+.history-item b {
+  color: var(--accent);
+}
+
+.diagnostic-row b {
+  font-size: 12px;
+}
+
+.pass {
+  color: var(--cyan);
+}
+
+.fail {
+  color: var(--amber);
+}
+
+.empty {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+}
+
+.status {
+  min-height: 18px;
+  margin-top: 11px;
+  overflow-wrap: anywhere;
+}
+
+.status[data-tone="error"] {
+  color: var(--danger);
+}
+
+body.is-booting #loginForm,
+body.is-booting #portalPanel {
+  display: none !important;
+}
+
+.hidden {
+  display: none !important;
+}

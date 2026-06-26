@@ -1,0 +1,44 @@
+{
+  "name": "safe-ai-session-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fastify backend for safe AI session and device management.",
+  "main": "dist/src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "build:all": "tsx scripts/build-all.ts",
+    "cleanup:customers": "tsx scripts/cleanup-expired-customers.ts",
+    "redis:ping": "tsx scripts/check-redis.ts",
+    "seed": "prisma db seed",
+    "start": "node dist/src/cluster.js",
+    "start:single": "node dist/src/server.js",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/helmet": "^12.0.1",
+    "@fastify/rate-limit": "^10.2.2",
+    "@prisma/client": "^6.1.0",
+    "argon2": "^0.41.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "fastify-plugin": "^5.0.1",
+    "ioredis": "^5.4.2",
+    "jose": "^5.9.6",
+    "nanoid": "^5.0.9",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="Dark AI creative studio interface">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070707"/>
+      <stop offset=".55" stop-color="#111318"/>
+      <stop offset="1" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="fish" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset=".5" stop-color="#d5ecff"/>
+      <stop offset="1" stop-color="#f7d6b8"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+    <clipPath id="tile"><rect width="300" height="168" rx="18"/></clipPath>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect x="70" y="62" width="1780" height="960" rx="42" fill="#0b0b0d" stroke="#ffffff" stroke-opacity=".16" stroke-width="2"/>
+  <rect x="118" y="104" width="58" height="876" rx="28" fill="#08090b"/>
+  <g fill="#ffffff" opacity=".65">
+    <circle cx="147" cy="170" r="10"/>
+    <rect x="137" y="240" width="20" height="20" rx="4"/>
+    <rect x="137" y="320" width="20" height="20" rx="4"/>
+    <rect x="137" y="400" width="20" height="20" rx="4"/>
+    <circle cx="147" cy="480" r="10"/>
+    <rect x="137" y="560" width="20" height="20" rx="4"/>
+    <circle cx="147" cy="640" r="10"/>
+  </g>
+  <rect x="250" y="105" width="560" height="42" rx="21" fill="#ffffff" opacity=".06"/>
+  <text x="210" y="134" fill="#ffffff" opacity=".86" font-family="Arial, sans-serif" font-size="24">Beta Fish</text>
+  <rect x="810" y="92" width="360" height="52" rx="26" fill="#121316" stroke="#ffffff" stroke-opacity=".08"/>
+  <circle cx="840" cy="118" r="8" fill="#8b8b8b"/>
+  <rect x="1245" y="104" width="70" height="28" rx="14" fill="#ffffff" opacity=".08"/>
+  <text x="1263" y="123" fill="#ffffff" opacity=".75" font-family="Arial, sans-serif" font-size="14">ULTRA</text>
+  <rect x="1360" y="100" width="350" height="860" rx="32" fill="#101113" stroke="#ffffff" stroke-opacity=".08"/>
+  <text x="1402" y="150" fill="#ffffff" opacity=".86" font-family="Arial, sans-serif" font-size="25">Fish Story Brainstorm</text>
+  <rect x="1402" y="200" width="260" height="116" rx="18" fill="#191a1e"/>
+  <text x="1430" y="248" fill="#ffffff" opacity=".72" font-family="Arial, sans-serif" font-size="18">Generate a betta fish in 10</text>
+  <text x="1430" y="275" fill="#ffffff" opacity=".72" font-family="Arial, sans-serif" font-size="18">different scenes swimming.</text>
+  <rect x="1402" y="785" width="260" height="50" rx="14" fill="#050505" stroke="#ffffff" stroke-opacity=".45"/>
+  <text x="1475" y="816" fill="#ffffff" font-family="Arial, sans-serif" font-size="18">Show 10 Videos</text>
+  <rect x="1402" y="880" width="280" height="86" rx="20" fill="#08090b" stroke="#ffffff" stroke-opacity=".1"/>
+  <text x="1430" y="930" fill="#ffffff" opacity=".45" font-family="Arial, sans-serif" font-size="16">What do you want to create?</text>
+  <g transform="translate(210 180)">
+    <g clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#b9e6ff"/>
+      <path d="M0 134c80-78 145-96 300-50v84H0z" fill="#f5d48b"/>
+      <ellipse cx="156" cy="84" rx="86" ry="42" fill="url(#fish)"/>
+      <path d="M236 84l56-40v80z" fill="#e9f5ff"/>
+      <circle cx="122" cy="76" r="8" fill="#111"/>
+    </g>
+    <g transform="translate(330 0)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#263746"/>
+      <rect width="300" height="168" fill="#000" opacity=".18"/>
+      <ellipse cx="142" cy="90" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M224 90l58-44v88z" fill="#e9f5ff"/>
+      <circle cx="110" cy="82" r="8" fill="#111"/>
+      <circle cx="180" cy="70" r="58" fill="none" stroke="#d64b42" stroke-width="8"/>
+    </g>
+    <g transform="translate(660 0)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#8fd0ff"/>
+      <path d="M0 130c90-50 180-62 300-24v62H0z" fill="#5b6470"/>
+      <ellipse cx="148" cy="92" rx="88" ry="42" fill="url(#fish)"/>
+      <path d="M230 92l58-42v84z" fill="#e9f5ff"/>
+      <circle cx="112" cy="86" r="8" fill="#111"/>
+    </g>
+    <g transform="translate(0 205)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#9b6837"/>
+      <rect y="96" width="300" height="72" fill="#d7b487"/>
+      <ellipse cx="150" cy="92" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M230 92l58-42v84z" fill="#e9f5ff"/>
+    </g>
+    <g transform="translate(330 205)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#9ed2df"/>
+      <path d="M0 124c86 20 180 16 300-18v62H0z" fill="#245566"/>
+      <ellipse cx="150" cy="90" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M230 90l58-42v84z" fill="#e9f5ff"/>
+    </g>
+    <g transform="translate(660 205)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#706e62"/>
+      <ellipse cx="148" cy="88" rx="92" ry="44" fill="url(#fish)"/>
+      <path d="M238 88l58-42v84z" fill="#e9f5ff"/>
+      <g fill="#e45b5a"><circle cx="130" cy="76" r="10"/><circle cx="155" cy="84" r="9"/><circle cx="184" cy="76" r="10"/></g>
+    </g>
+    <g transform="translate(0 410)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#6aa84f"/>
+      <ellipse cx="150" cy="86" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M230 86l58-42v84z" fill="#e9f5ff"/>
+    </g>
+    <g transform="translate(330 410)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#6b7280"/>
+      <path d="M0 124c72-36 160-48 300-4v48H0z" fill="#2f2f2f"/>
+      <ellipse cx="154" cy="88" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M234 88l58-42v84z" fill="#e9f5ff"/>
+    </g>
+    <g transform="translate(660 410)" clip-path="url(#tile)">
+      <rect width="300" height="168" fill="#7d8790"/>
+      <path d="M0 120h300v48H0z" fill="#323741"/>
+      <ellipse cx="146" cy="88" rx="86" ry="40" fill="url(#fish)"/>
+      <path d="M226 88l58-42v84z" fill="#e9f5ff"/>
+    </g>
+  </g>
+  <circle cx="960" cy="540" r="70" fill="#111" opacity=".75"/>
+  <path d="M938 500v80l66-40z" fill="#fff"/>
+  <circle cx="960" cy="540" r="110" fill="#47d7ff" opacity=".12" filter="url(#glow)"/>
+</svg>

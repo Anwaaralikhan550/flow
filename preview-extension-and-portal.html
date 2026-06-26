@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Extension and Customer Portal Preview</title>
+    <style>
+      :root {
+        --ink: #f7f2e8;
+        --muted: #8d978d;
+        --bg: #080a09;
+        --panel: #121714;
+        --line: #2d3932;
+        --field: #0c1110;
+        --accent: #d8ff63;
+        --cyan: #87e6c1;
+        --danger: #ff8b78;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+
+      header {
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+        background: #0c1110;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      header h1 {
+        font-size: 20px;
+      }
+
+      header p,
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .wrap {
+        display: grid;
+        grid-template-columns: minmax(360px, 430px) 1fr;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .frame {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .bar {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .popup {
+        min-height: 640px;
+        padding: 18px;
+        background:
+          linear-gradient(145deg, rgba(216, 255, 99, 0.13), transparent 28%),
+          linear-gradient(205deg, rgba(135, 230, 193, 0.12), transparent 34%),
+          #080a09;
+      }
+
+      .mast,
+      .account,
+      .row,
+      .panel-title,
+      .history {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+
+      .mast h2 {
+        margin-top: 4px;
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .chip,
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px;
+        border-radius: 999px;
+        padding: 0 10px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .chip {
+        color: #06130d;
+        background: var(--cyan);
+      }
+
+      .badge {
+        color: #14200b;
+        background: var(--accent);
+      }
+
+      .panel,
+      .account {
+        margin-top: 11px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(18, 23, 20, 0.94);
+      }
+
+      .email {
+        max-width: 260px;
+        overflow-wrap: anywhere;
+        font-weight: 800;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 11px;
+      }
+
+      .tabs span {
+        min-height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: var(--field);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .tabs span:first-child {
+        color: #14200b;
+        background: var(--accent);
+      }
+
+      .metric,
+      .row,
+      .history {
+        min-height: 48px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--field);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .metric span,
+      .row span,
+      .history span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .progress {
+        height: 10px;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--field);
+      }
+
+      .progress span {
+        display: block;
+        width: 38%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--cyan), var(--accent));
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .actions button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--ink);
+        background: #1e2823;
+        font-weight: 800;
+      }
+
+      .actions .primary {
+        grid-column: 1 / -1;
+        color: #14200b;
+        border: 0;
+        background: var(--accent);
+      }
+
+      .landing {
+        min-height: 760px;
+        background:
+          linear-gradient(180deg, rgba(0, 0, 0, 0.2), #050505),
+          url("landing/public/assets/hero-mosaic.svg") center/cover no-repeat,
+          #050505;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 24px;
+      }
+
+      .nav strong {
+        font-size: 34px;
+      }
+
+      .nav span {
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 14px;
+      }
+
+      .hero {
+        padding: 80px 28px 54px;
+        text-align: center;
+      }
+
+      .hero h2 {
+        font-size: clamp(76px, 12vw, 150px);
+        line-height: 0.85;
+        color: white;
+      }
+
+      .hero p {
+        max-width: 720px;
+        margin: 28px auto 0;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 28px;
+        line-height: 1.08;
+      }
+
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 28px;
+      }
+
+      .cta a {
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 24px;
+        color: #050505;
+        background: white;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .cta a:last-child {
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        background: rgba(0, 0, 0, 0.38);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding: 20px;
+      }
+
+      .card {
+        min-height: 150px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(8, 10, 9, 0.78);
+      }
+
+      .card p {
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 13px;
+      }
+
+      @media (max-width: 1100px) {
+        .wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Extension + customer portal preview</h1>
+      <p>Preview only. Actual login and lease run inside the installed Chrome extension.</p>
+    </header>
+
+    <main class="wrap">
+      <section class="frame">
+        <div class="bar"><span>Extension popup portal</span><span>Logged-in customer view</span></div>
+        <div class="popup">
+          <div class="mast">
+            <div>
+              <p class="kicker">License Bridge</p>
+              <h2>Flow portal</h2>
+            </div>
+            <span class="chip">Online</span>
+          </div>
+
+          <section class="account">
+            <div>
+              <p class="email">user_test1234@yourdomain.com</p>
+              <p class="muted">BASIC plan, 29 days left</p>
+            </div>
+            <span class="badge">CUSTOMER</span>
+          </section>
+
+          <div class="tabs"><span>Overview</span><span>Flow</span><span>Activity</span><span>Health</span></div>
+
+          <section class="panel">
+            <div class="panel-title"><h3>Credits</h3><b>12 left</b></div>
+            <div class="progress"><span></span></div>
+            <div class="metrics">
+              <div class="metric"><span>Used</span><b>8</b></div>
+              <div class="metric"><span>Limit</span><b>20</b></div>
+              <div class="metric"><span>Days</span><b>29</b></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title"><h3>Flow Bridge</h3><span class="muted">Connected</span></div>
+            <div class="row"><span>Policy</span><b>Loaded</b></div>
+            <div class="row"><span>Lease</span><b>Active</b></div>
+            <div class="row"><span>Premium lock</span><b style="color: var(--danger)">Active for BASIC</b></div>
+            <div class="actions">
+              <button class="primary">Open Google Flow</button>
+              <button>Upgrade</button>
+              <button>Support</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="frame">
+        <div class="bar"><span>Marketing landing website</span><span>Features · Pricing · Download · Support</span></div>
+        <div class="landing">
+          <div class="nav">
+            <strong>flow</strong>
+            <span>Features</span>
+            <span>Pricing</span>
+            <span>How it works</span>
+            <span>Download extension</span>
+            <span>Support</span>
+          </div>
+          <div class="hero">
+            <h2>Flow</h2>
+            <p>Your AI creative studio built with advanced generative video models.</p>
+            <div class="cta">
+              <a href="#">Download Chrome Extension</a>
+              <a href="#">View Pricing</a>
+            </div>
+          </div>
+          <div class="cards">
+            <article class="card"><h3>Features</h3><p>AI video workflow, prompt tools, upscaling, and secure licensing.</p></article>
+            <article class="card"><h3>Pricing</h3><p>Basic, Pro, and Ultra tiers with support-assisted purchase.</p></article>
+            <article class="card"><h3>How it works</h3><p>Install extension, login once, work inside Google Flow with live status.</p></article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

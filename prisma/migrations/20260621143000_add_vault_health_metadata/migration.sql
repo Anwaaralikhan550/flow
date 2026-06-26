@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "MasterAccount"
+ADD COLUMN "vaultVersion" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "vaultHealth" TEXT NOT NULL DEFAULT 'UNKNOWN',
+ADD COLUMN "lastVaultSyncAt" TIMESTAMP(3);

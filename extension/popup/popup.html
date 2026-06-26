@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vidgen Flow</title>
+    <link rel="stylesheet" href="./popup.css">
+  </head>
+  <body class="is-booting">
+    <main class="shell">
+      <section class="masthead">
+        <div class="brand-lockup">
+          <img src="../icons/google-gemini.svg" alt="" class="brand-mark" width="24" height="24">
+          <h1>Vidgen Flow</h1>
+        </div>
+        <span id="sessionChip" class="chip ok">Online</span>
+      </section>
+
+      <form id="settingsForm" class="panel compact hidden">
+        <label for="apiBaseUrl">Backend URL</label>
+        <div class="inline">
+          <input id="apiBaseUrl" name="apiBaseUrl" type="url" placeholder="https://api.vidgen.fun" autocomplete="off">
+          <button type="submit" title="Save backend URL">Save</button>
+        </div>
+      </form>
+
+      <form id="loginForm" class="panel">
+        <div class="panel-title">
+          <h2>Sign in</h2>
+        </div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="user_xxxx@vidgen.fun" autocomplete="username" required>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+        <button type="submit" class="primary">Log in</button>
+      </form>
+
+      <section id="portalPanel" class="hidden">
+        <section class="account-card">
+          <div>
+            <p id="emailLabel" class="email"></p>
+            <p id="planLabel" class="subtle"></p>
+          </div>
+          <span id="roleBadge" class="badge">CUSTOMER</span>
+        </section>
+
+        <nav class="tabs" aria-label="Portal sections">
+          <button type="button" class="tab active" data-tab="overview">Overview</button>
+          <button type="button" class="tab" data-tab="flow">Flow</button>
+          <button type="button" class="tab" data-tab="activity">Activity</button>
+          <button type="button" class="tab" data-tab="health">Health</button>
+        </nav>
+
+        <section class="tab-panel" data-panel="overview">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Credits</h2>
+              <strong id="creditLabel">0 left</strong>
+            </div>
+            <div class="progress"><span id="creditBar"></span></div>
+            <div class="metrics">
+              <div><span>Used</span><b id="creditsUsedLabel">0</b></div>
+              <div><span>Limit</span><b id="creditsLimitLabel">0</b></div>
+              <div><span>Days</span><b id="daysLabel">0</b></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Session lease</h2>
+              <span id="leaseStateLabel">Inactive</span>
+            </div>
+            <dl class="lease-list">
+              <div>
+                <dt>Provider</dt>
+                <dd id="providerLabel">None</dd>
+              </div>
+              <div>
+                <dt>Expires</dt>
+                <dd id="leaseExpiryLabel">Not leased</dd>
+              </div>
+            </dl>
+            <div class="actions">
+              <button id="leaseButton" type="button" class="primary">Request lease</button>
+              <button id="refreshDashboardButton" type="button">Refresh</button>
+            </div>
+            <div class="actions two">
+              <button id="upgradeButton" type="button">Upgrade</button>
+              <button id="supportButton" type="button">Support</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="flow">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Flow Bridge</h2>
+              <span id="flowBridgeStateLabel">Checking</span>
+            </div>
+            <div class="bridge-hero">
+              <strong id="flowPlanLabel">Not connected</strong>
+              <span id="flowLockLabel">Log in to sync policy</span>
+            </div>
+            <div class="diagnostic-list">
+              <div class="diagnostic-row">
+                <span>Policy</span>
+                <b id="flowPolicyLabel" class="fail">Not loaded</b>
+              </div>
+              <div class="diagnostic-row">
+                <span>Lease</span>
+                <b id="flowLeaseLabel" class="fail">Inactive</b>
+              </div>
+              <div class="diagnostic-row">
+                <span>Generate cost</span>
+                <b id="flowCostLabel">20</b>
+              </div>
+              <div class="diagnostic-row">
+                <span>Credits</span>
+                <b id="flowCreditLabel">0 left</b>
+              </div>
+            </div>
+            <div class="actions">
+              <button id="openFlowButton" type="button" class="primary">Open Google Flow</button>
+              <button id="syncFlowButton" type="button">Sync bridge</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="activity">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Generation history</h2>
+              <span id="historyCountLabel">0 items</span>
+            </div>
+            <div id="historyList" class="history-list"></div>
+            <div class="actions two">
+              <button id="reportSuccessButton" type="button">Report success</button>
+              <button id="reportIssueButton" type="button">Report issue</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="health">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Diagnostics</h2>
+              <span id="configHashLabel">No policy</span>
+            </div>
+            <div id="diagnosticList" class="diagnostic-list"></div>
+            <button id="logoutButton" type="button" class="danger">Log out</button>
+          </section>
+        </section>
+      </section>
+
+      <p id="statusLine" class="status"></p>
+    </main>
+
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

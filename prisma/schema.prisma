@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  CUSTOMER
+}
+
+enum PlanType {
+  BASIC
+  PRO
+  ULTRA
+}
+
+enum MasterAccountStatus {
+  ACTIVE
+  COOLING_DOWN
+  EXHAUSTED
+  AUTH_INVALID
+  REQUIRES_SYNC
+  DISABLED
+}
+
+enum LeaseStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  passwordHash     String
+  role             Role          @default(CUSTOMER)
+  plan             PlanType      @default(BASIC)
+  validUntil       DateTime      @default(now())
+  isManuallyDisabled Boolean     @default(false)
+  createdByAdminId String?
+  creditsLimit     Int           @default(20)
+  creditsUsed      Int           @default(0)
+  createdByAdmin   User?         @relation("AdminCreatedUsers", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  createdUsers     User[]        @relation("AdminCreatedUsers")
+  devices          Device[]
+  leases           MasterAccountLease[]
+  usageReports     UsageReport[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([role])
+  @@index([plan])
+  @@index([validUntil])
+  @@index([role, validUntil])
+  @@index([isManuallyDisabled])
+  @@index([role, validUntil, isManuallyDisabled])
+  @@index([createdByAdminId])
+}
+
+model Device {
+  id            String   @id @default(cuid())
+  userId        String
+  fingerprintId String
+  firstSeenAt   DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprintId])
+  @@index([userId])
+}
+
+model MasterAccount {
+  id              String              @id @default(cuid())
+  provider        String
+  // Not @unique here — uniqueness is enforced by a partial index (see migration
+  // 20260624_master_account_email_partial_unique) that only applies while
+  // deletedAt IS NULL, so a soft-deleted account's email can be reused by a
+  // brand-new account without a unique-constraint conflict.
+  email           String
+  encryptedCookie String
+  cookieNonce     String
+  vaultData       String?             @db.Text
+  vaultVersion    Int                 @default(0)
+  vaultHealth     String              @default("UNKNOWN")
+  lastVaultSyncAt DateTime?
+  status          MasterAccountStatus @default(ACTIVE)
+  dailyLimit      Int
+  remainingLimit  Int
+  cooldownUntil   DateTime?
+  lastUsedAt      DateTime?
+  // Optional upstream gateway proxy per account — enables all concurrent runners sharing
+  // this session to egress through the same static edge IP, preventing multi-location flags.
+  proxyHost       String?
+  proxyPort       Int?
+  proxyUsername   String?
+  proxyPassword   String?
+  // Long-lived hashed key for the unattended Keeper extension to push fresh cookies
+  // without a human re-running the one-time admin sync-code flow each cycle.
+  keeperKeyHash   String?
+  // Soft-delete marker. A hard delete would cascade-remove usageReports/leases
+  // (onDelete: Cascade below), destroying billing/audit history. "Delete" in the
+  // admin UI sets this instead of removing the row, so history stays intact while
+  // the account disappears from the active pool and account list.
+  deletedAt       DateTime?
+  leases          MasterAccountLease[]
+  usageReports    UsageReport[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status, remainingLimit])
+  @@index([cooldownUntil])
+  @@index([deletedAt])
+}
+
+model MasterAccountLease {
+  id                  String        @id @default(cuid())
+  userId              String
+  masterAccountId     String
+  deviceFingerprintId String
+  status              LeaseStatus   @default(ACTIVE)
+  leasedAt            DateTime      @default(now())
+  expiresAt           DateTime
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  masterAccount       MasterAccount @relation(fields: [masterAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([masterAccountId, status])
+  @@index([expiresAt])
+}
+
+model UsageReport {
+  id                  String        @id @default(cuid())
+  leaseId             String?       @unique
+  userId              String
+  masterAccountId     String
+  deviceFingerprintId String
+  outcome             String
+  usageUnits          Int           @default(1)
+  providerStatusCode  Int?
+  providerErrorType   String?
+  providerMessage     String?
+  createdAt           DateTime      @default(now())
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  masterAccount       MasterAccount @relation(fields: [masterAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([masterAccountId, createdAt])
+  @@index([outcome])
+}
+
+model PlanConfig {
+  id           String   @id @default(cuid())
+  plan         PlanType @unique
+  creditsLimit Int
+  priceCents   Int      @default(0)
+  currency     String   @default("USD")
+  durationDays Int      @default(30)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AppConfig {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

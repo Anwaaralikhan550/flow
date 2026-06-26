@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#05040a"/><stop offset=".58" stop-color="#101c39"/><stop offset="1" stop-color="#221044"/></linearGradient></defs>
+  <rect width="1920" height="1080" fill="url(#g)"/>
+  <circle cx="520" cy="250" r="330" fill="#a855f7" opacity=".18"/>
+  <rect x="560" y="150" width="800" height="720" rx="48" fill="#0d0c18" stroke="#ffffff" stroke-opacity=".14" stroke-width="3"/>
+  <circle cx="960" cy="275" r="70" fill="#a855f7"/>
+  <rect x="700" y="410" width="520" height="70" rx="35" fill="#ffffff" opacity=".1"/>
+  <rect x="700" y="535" width="520" height="70" rx="35" fill="#ffffff" opacity=".1"/>
+  <rect x="790" y="675" width="340" height="78" rx="39" fill="#5d7cff"/>
+  <text x="770" y="456" fill="#a7a0b8" font-family="Arial, sans-serif" font-size="28">user_xxxxx@yourdomain.com</text>
+  <text x="690" y="920" fill="#f6f2ff" font-family="Arial, sans-serif" font-size="52" font-weight="800">Login with Virtual Email</text>
+</svg>

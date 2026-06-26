@@ -1,0 +1,2 @@
+ALTER TABLE "MasterAccount"
+ADD COLUMN IF NOT EXISTS "vaultData" TEXT;

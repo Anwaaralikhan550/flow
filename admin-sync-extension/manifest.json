@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Flow Admin Vault Sync",
+  "version": "1.0.0",
+  "description": "Extracts platform cookies and syncs them to the backend for Premium Master Accounts.",
+  "permissions": [
+    "cookies",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://labs.google/*",
+    "*://*.labs.google/*",
+    "https://api.vidgen.fun/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

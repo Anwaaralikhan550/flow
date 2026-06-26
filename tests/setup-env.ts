@@ -1,0 +1,9 @@
+process.env.NODE_ENV = "test";
+process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/test";
+process.env.REDIS_URL = "redis://localhost:6379";
+process.env.JWT_ISSUER = "test-issuer";
+process.env.JWT_AUDIENCE = "test-audience";
+process.env.JWT_PRIVATE_KEY_BASE64 = Buffer.from("test-private-key").toString("base64");
+process.env.JWT_PUBLIC_KEY_BASE64 = Buffer.from("test-public-key").toString("base64");
+process.env.COOKIE_ENCRYPTION_KEY_BASE64 = Buffer.alloc(32, 1).toString("base64");
+process.env.ALLOWED_EMAIL_DOMAINS = "example.com";
