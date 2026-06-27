@@ -159,12 +159,16 @@ export class UsageService {
   private async resolveLease(leaseId: string) {
     const rawLease = await this.redis.get(`lease:${leaseId}`);
     if (rawLease) {
-      return JSON.parse(rawLease) as {
-        userId: string;
-        masterAccountId: string;
-        deviceFingerprintId: string;
-        expiresAt: string;
-      };
+      try {
+        return JSON.parse(rawLease) as {
+          userId: string;
+          masterAccountId: string;
+          deviceFingerprintId: string;
+          expiresAt: string;
+        };
+      } catch {
+        // Redis is only a lease cache; fall back to the durable database row below.
+      }
     }
 
     const lease = await this.prisma.masterAccountLease.findUnique({

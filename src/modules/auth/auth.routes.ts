@@ -15,7 +15,11 @@ function readCookie(cookieHeader: string | undefined, name: string) {
   for (const part of cookieHeader.split(";")) {
     const [key, ...valueParts] = part.trim().split("=");
     if (key === name) {
-      return decodeURIComponent(valueParts.join("="));
+      try {
+        return decodeURIComponent(valueParts.join("="));
+      } catch {
+        return null;
+      }
     }
   }
 

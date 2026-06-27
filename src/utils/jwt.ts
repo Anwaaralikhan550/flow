@@ -49,6 +49,14 @@ function safeEqual(left: string, right: string) {
   return crypto.timingSafeEqual(leftDigest, rightDigest);
 }
 
+function parseRedisRecord<T>(raw: string, revokedMessage: string, revokedCode: string): T {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw unauthorized(revokedMessage, revokedCode);
+  }
+}
+
 export async function issueAccessToken(
   redis: Redis,
   params: { userId: string; fingerprintId: string; role: string; plan: string; validUntil: Date; configHash: string },
@@ -181,7 +189,7 @@ export async function verifyAccessToken(redis: Redis, bearerToken: string): Prom
     throw unauthorized("Session is expired or revoked", "SESSION_REVOKED");
   }
 
-  const session = JSON.parse(rawSession) as SessionRecord;
+  const session = parseRedisRecord<SessionRecord>(rawSession, "Session is expired or revoked", "SESSION_REVOKED");
   if (
     !safeEqual(session.userId, payload.sub) ||
     !safeEqual(session.fingerprintId, payload.fingerprintId) ||
@@ -237,7 +245,11 @@ export async function consumeRefreshToken(redis: Redis, refreshToken: string): P
     throw unauthorized("Refresh token is expired or revoked", "REFRESH_TOKEN_REVOKED");
   }
 
-  const session = JSON.parse(rawSession) as RefreshRecord;
+  const session = parseRedisRecord<RefreshRecord>(
+    rawSession,
+    "Refresh token is expired or revoked",
+    "REFRESH_TOKEN_REVOKED",
+  );
   if (!safeEqual(session.userId, payload.sub) || !safeEqual(session.fingerprintId, payload.fingerprintId)) {
     throw unauthorized("Refresh session does not match token", "REFRESH_SESSION_MISMATCH");
   }

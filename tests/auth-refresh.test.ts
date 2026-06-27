@@ -10,6 +10,14 @@ function response(status: number, body: unknown) {
   };
 }
 
+function textResponse(status: number, body: string) {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    text: vi.fn().mockResolvedValue(body),
+  };
+}
+
 describe("extension silent refresh", () => {
   it("refreshes after a 401, stores the new token, and retries the original request", async () => {
     const fetchImpl = vi
@@ -141,5 +149,26 @@ describe("extension silent refresh", () => {
     await expect(delayedRequest).resolves.toMatchObject({ status: 200 });
 
     expect(fetchImpl.mock.calls.filter(([url]) => String(url).endsWith("/auth/refresh"))).toHaveLength(1);
+  });
+
+  it("handles non-JSON refresh failures without throwing a parser error", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(response(401, { error: { code: "INVALID_TOKEN" } }))
+      .mockResolvedValueOnce(textResponse(502, "<html>bad gateway</html>"));
+    const authenticatedFetch = createAuthenticatedFetch({
+      fetchImpl,
+      getToken: vi.fn().mockResolvedValue("expired-access-token"),
+      setToken: vi.fn().mockResolvedValue(undefined),
+      getApiBaseUrl: vi.fn().mockResolvedValue("https://api.example.com"),
+    });
+
+    await expect(
+      authenticatedFetch("https://api.example.com/client/dashboard", {
+        method: "GET",
+        headers: { Authorization: "Bearer expired-access-token" },
+        token: "expired-access-token",
+      }),
+    ).rejects.toMatchObject({ message: "Refresh failed with 502", status: 502 });
   });
 });

@@ -56,7 +56,15 @@ export function createAuthenticatedFetch({ fetchImpl, getToken, setToken, getApi
 
 async function readJson(response) {
   const text = await response.text();
-  return text ? JSON.parse(text) : null;
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function createHttpError(response, data, fallback) {

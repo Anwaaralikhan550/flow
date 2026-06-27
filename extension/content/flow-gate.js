@@ -597,7 +597,7 @@
     overlay.style.top = `${Math.max(0, top)}px`;
     overlay.style.width = `${Math.min(window.innerWidth - Math.max(0, panelRect.left), panelRect.width)}px`;
     overlay.style.height = `${Math.max(28, height)}px`;
-    document.body.appendChild(overlay);
+    (document.body || document.documentElement).appendChild(overlay);
   }
 
   function clearModelOptionDecorations() {
@@ -902,7 +902,7 @@
       return;
     }
 
-    const pageText = document.body.textContent?.replace(/\s+/g, " ").slice(-4000) ?? "";
+    const pageText = document.body ? (document.body.textContent?.replace(/\s+/g, " ").slice(-4000) ?? "") : "";
     if (hasStrongGenerationSignal(pageText)) {
       generationSignals.releaseInProgress = true;
       const releaseResponse = await chrome.runtime.sendMessage({ type: "RELEASE_USAGE", payload: { submitted: true } }).catch((error) => ({
@@ -944,7 +944,7 @@
       return;
     }
 
-    const pageText = document.body.textContent?.replace(/\s+/g, " ").slice(-3000) ?? "";
+    const pageText = document.body ? (document.body.textContent?.replace(/\s+/g, " ").slice(-3000) ?? "") : "";
     const callbackRejected =
       location.pathname.includes("/fx/api/auth/signin") && location.search.includes("error=Callback");
     const wrongAccountPrompt = /\btry signing in with a different account\b/i.test(pageText);
@@ -988,7 +988,7 @@
       return;
     }
 
-    const pageText = document.body.textContent?.replace(/\s+/g, " ").slice(-4000) ?? "";
+    const pageText = document.body ? (document.body.textContent?.replace(/\s+/g, " ").slice(-4000) ?? "") : "";
     if (/\b(video saved|saved to|generation complete|generated successfully|created)\b/i.test(pageText)) {
       void reportUsage("SUCCESS", "Generation success reported.");
       return;
@@ -1133,7 +1133,7 @@
       uiHost.style.inset = "0";
       uiHost.style.zIndex = "2147483647";
       uiHost.style.pointerEvents = "none";
-      document.body.appendChild(uiHost);
+      (document.body || document.documentElement).appendChild(uiHost);
     }
 
     uiRoot = uiHost.shadowRoot ?? uiHost.attachShadow({ mode: "open" });
@@ -1294,7 +1294,7 @@
         pointer-events: none !important;
       }
     `;
-    document.head.appendChild(style);
+    (document.head || document.documentElement).appendChild(style);
   }
 
   function injectShadowUiStyle() {
