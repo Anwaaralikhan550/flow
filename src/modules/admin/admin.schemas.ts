@@ -94,8 +94,21 @@ const masterAccountResponseProperties = {
   vaultVersion: { type: "number" },
   vaultHealth: { type: "string" },
   lastVaultSyncAt: { type: ["string", "null"] },
+  proxyHost: { type: ["string", "null"] },
+  proxyPort: { type: ["number", "null"] },
+  proxyUsername: { type: ["string", "null"] },
+  hasProxyPassword: { type: "boolean" },
+  activeJobCount: { type: "number" },
+  capacityLimit: { type: "number" },
   createdAt: { type: "string" },
   updatedAt: { type: "string" },
+} as const;
+
+const proxyConfigProperties = {
+  proxyHost: { type: ["string", "null"], maxLength: 255 },
+  proxyPort: { type: ["integer", "null"], minimum: 1, maximum: 65535 },
+  proxyUsername: { type: ["string", "null"], maxLength: 255 },
+  proxyPassword: { type: ["string", "null"], maxLength: 512 },
 } as const;
 
 export const listMasterAccountsSchema = {
@@ -127,7 +140,34 @@ export const addMasterAccountSchema = {
       dailyLimit: { type: "integer", minimum: 1, maximum: 1_000_000 },
       remainingLimit: { type: "integer", minimum: 0, maximum: 1_000_000 },
       status: { type: "string", enum: ["ACTIVE", "COOLING_DOWN", "EXHAUSTED", "AUTH_INVALID", "REQUIRES_SYNC", "DISABLED"] },
+      ...proxyConfigProperties,
     },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        account: {
+          type: "object",
+          properties: masterAccountResponseProperties,
+        },
+      },
+    },
+  },
+} as const;
+
+export const updateMasterAccountProxySchema = {
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: { type: "string", minLength: 8, maxLength: 128 },
+    },
+  },
+  body: {
+    type: "object",
+    additionalProperties: false,
+    properties: proxyConfigProperties,
   },
   response: {
     200: {
@@ -466,6 +506,17 @@ export type AddMasterAccountBody = {
   dailyLimit: number;
   remainingLimit?: number;
   status?: "ACTIVE" | "COOLING_DOWN" | "EXHAUSTED" | "AUTH_INVALID" | "REQUIRES_SYNC" | "DISABLED";
+  proxyHost?: string | null;
+  proxyPort?: number | null;
+  proxyUsername?: string | null;
+  proxyPassword?: string | null;
+};
+
+export type UpdateMasterAccountProxyBody = {
+  proxyHost?: string | null;
+  proxyPort?: number | null;
+  proxyUsername?: string | null;
+  proxyPassword?: string | null;
 };
 
 export type UpdateMasterAccountVaultDataBody = {

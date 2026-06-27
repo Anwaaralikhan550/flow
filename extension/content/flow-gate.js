@@ -29,6 +29,9 @@
   const DEFAULT_LEASE_READY_WINDOW_MS = 5_000;
   const ACTIVITY_LEASE_READY_WINDOW_MS = 30_000;
   const ACTIVITY_LEASE_DEBOUNCE_MS = 1_000;
+  const AUTO_LEASE_RETRY_MIN_MS = 750;
+  const AUTO_LEASE_RETRY_MAX_MS = 5_000;
+  const AUTO_LEASE_RETRY_JITTER_MS = 350;
   const PREMIUM_AVATAR_URL =
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23f8d46a'/%3E%3Cstop offset='1' stop-color='%236b4b00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='128' height='128' rx='64' fill='url(%23g)'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23fff7d6'/%3E%3Cpath d='M28 108c7-24 25-36 36-36s29 12 36 36' fill='%23fff7d6'/%3E%3Cpath d='M42 30l12 10 10-16 10 16 12-10-6 30H48z' fill='%23211100' opacity='.9'/%3E%3C/svg%3E";
   const PLAN_DISPLAY_NAMES = {
@@ -1455,7 +1458,7 @@
     }
 
     if (response.result?.unavailable) {
-      const retryAfterMs = Math.max(750, Math.min(Number(response.result.retryAfterMs) || 1500, 5000));
+      const retryAfterMs = calculateAutoLeaseRetryDelay(response.result.retryAfterMs);
       showSessionBadge(response.result.message ?? "Preparing session...", "pending");
       window.clearTimeout(autoLeaseRetryTimer);
       autoLeaseRetryTimer = window.setTimeout(() => {
@@ -1469,6 +1472,13 @@
     requestedLeaseReadyWindowMs = DEFAULT_LEASE_READY_WINDOW_MS;
     await refreshState();
     showSessionBadge("Session Protected / Active", "active");
+  }
+
+  function calculateAutoLeaseRetryDelay(retryAfterMs) {
+    const baseDelay = Number(retryAfterMs) || 1500;
+    const boundedDelay = Math.max(AUTO_LEASE_RETRY_MIN_MS, Math.min(baseDelay, AUTO_LEASE_RETRY_MAX_MS));
+    const jitter = Math.floor(Math.random() * AUTO_LEASE_RETRY_JITTER_MS);
+    return boundedDelay + jitter;
   }
 
   /**

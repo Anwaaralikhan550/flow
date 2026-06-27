@@ -1,46 +1,29 @@
 # Flow Admin Vault Sync Extension
 
-This is a standalone extension for Super Admins to sync live session cookies from a premium master account to the backend vault.
+Standalone keeper extension for Super Admins to sync live master-account session cookies into the backend vault.
 
-## Setup Instructions
+## Setup
 
-1.  Open Chrome and navigate to `chrome://extensions/`.
-2.  Enable **Developer mode** (toggle in the top right).
-3.  Click **Load unpacked** and select this `admin-sync-extension` folder.
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable Developer mode.
+3. Click Load unpacked and select this `admin-sync-extension` folder.
+4. In the admin panel, open the target master account and generate a Setup Code.
+5. Open this extension popup, paste the Setup Code, and click Apply Setup.
 
-## How to Sync
+## Sync Flow
 
-1.  **Open the workspace**: Ensure you are logged into the target premium master account in the same Chrome profile where this extension is installed, and keep the workspace page active.
-2.  **Get Master Account ID**: Find the UUID of the Master Account you want to update from the Admin Panel.
-3.  **Get Admin Access Token**: Use the active Super Admin JWT from the Admin Panel session.
-4.  **Get Sync Code**: Generate a valid sync authorization code from the Admin Panel.
-5.  **Sync**:
-    *   Click the extension icon.
-    *   Enter the **Master Account ID**.
-    *   Enter the **Admin Access Token**.
-    *   Enter the **Sync Authorization Code**.
-    *   Click **Sync Cookies to Backend**.
+1. Use a dedicated keeper Chrome profile.
+2. Log that profile into the target premium master account on `https://labs.google/` or `https://labs.google.com/`.
+3. Apply the Setup Code once; it stores `apiBaseUrl`, `masterAccountId`, and `keeperKey` locally.
+4. Click Sync Now, or enable Auto-Sync for the scheduled keeper alarm.
+5. The extension collects the required NextAuth cookies from fixed trusted origins and posts them to `/master-accounts/:id/keeper-sync`.
 
 ## Verification
 
-### 1. UI Check
-The extension will display a success message: `Success! Vault data updated for [email]`.
-
-### 2. Database Check
-You can verify the data was saved by checking the `MasterAccount` table in the database:
-```sql
-SELECT "email", "vaultData" FROM "MasterAccount" WHERE "id" = 'YOUR_UUID_HERE';
-```
-The `vaultData` column should contain a JSON array of cookies.
-
-### 3. API Test (Manual)
-You can test the backend endpoint directly using `curl`:
-```bash
-curl -X PATCH https://api.vidgen.fun/admin/master-accounts/YOUR_UUID/vault-data \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_ADMIN_ACCESS_TOKEN" \
-  -d '{"vaultData": "[{\"name\":\"test\",\"value\":\"cookie\"}]", "syncCode": "YOUR_SYNC_CODE"}'
-```
+- The popup shows the last sync status and timestamp.
+- The admin panel should show vault health as `COMPLETE`, an incremented vault version, and a recent sync timestamp.
+- The backend stores encrypted session material; plaintext cookie JSON is not kept in `MasterAccount.vaultData`.
 
 ## Security Note
-This extension is for administrative use only. Keep access tokens, sync codes, and master-account browser profiles secure.
+
+This extension is for administrative keeper profiles only. Keep setup codes, keeper keys, and master-account browser profiles restricted to trusted operators.

@@ -43,17 +43,9 @@
   "content_scripts": [
     {
       "matches": ["https://labs.google/*", "https://labs.google.com/*"],
-      "js": ["content/stealth-shield.js"],
-      "run_at": "document_start",
-      "world": "MAIN",
-      "all_frames": true
-    },
-    {
-      "matches": ["https://labs.google/*", "https://labs.google.com/*"],
       "js": ["content/flow-gate.js"],
       "run_at": "document_start",
-      "world": "MAIN",
-      "all_frames": true
+      "world": "ISOLATED"
     },
     {
       "matches": ["https://labs.google/fx/api/auth/signout*"],

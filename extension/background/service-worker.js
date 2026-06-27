@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   dashboard: "dashboard",
   activeLease: "activeLease",
   fingerprint: "fingerprintId",
+  managedSession: "managedSessionActive",
   // Proxy credentials live in session storage so they are cleared automatically
   // when the browser closes. Never written to persistent local storage.
   proxyCredentials: "activeProxyCredentials"
@@ -34,6 +35,23 @@ let leaseAccountPromise = null;
 // Any weaker policy (e.g. 'default_public_interface_only') still leaks subnet
 // addresses through local ICE candidates — only this value closes that path.
 enforceWebRtcPrivacy().catch(() => undefined);
+
+// If the service worker wakes while no customer session is present, clear any
+// stale target cookies/proxy left by a browser crash, forced extension reload,
+// or interrupted logout.
+cleanupIfLoggedOut().catch(() => undefined);
+
+if (chrome.runtime.onStartup) {
+  chrome.runtime.onStartup.addListener(() => {
+    cleanupIfLoggedOut().catch(() => undefined);
+  });
+}
+
+if (chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener(() => {
+    cleanupIfLoggedOut().catch(() => undefined);
+  });
+}
 
 // Handles proxy authentication challenges for the active lease's gateway proxy.
 // Must be registered at module top-level — MV3 service workers unload between
@@ -274,6 +292,7 @@ async function leaseAccount() {
     });
   }
 
+  await chrome.storage.local.set({ [STORAGE_KEYS.managedSession]: true });
   await chrome.storage.session.set({ [STORAGE_KEYS.activeLease]: activeLease });
   const dashboard = await fetchDashboard().catch(() => null);
 
@@ -403,6 +422,7 @@ async function wipeCookies(payload = {}) {
   // Always clear proxy settings alongside cookies so the profile returns to
   // its native network path immediately after the lease is released.
   await clearProxySettings();
+  await clearManagedSessionMarker();
 
   return { ok: true };
 }
@@ -457,6 +477,10 @@ async function removeCookie(cookie) {
 
   if (cookie.storeId) {
     details.storeId = cookie.storeId;
+  }
+
+  if (cookie.partitionKey) {
+    details.partitionKey = cookie.partitionKey;
   }
 
   await chrome.cookies.remove(details);
@@ -525,6 +549,7 @@ async function clearActiveLeaseState() {
   // Proxy is only cleared for explicit cleanup paths (failed setup/logout/manual
   // reset), not for submitted live generations.
   await clearProxySettings();
+  await clearManagedSessionMarker();
 }
 
 async function clearLeaseMetadataOnly() {
@@ -589,14 +614,9 @@ async function logout() {
   const apiBaseUrl = await getApiBaseUrl();
   const stored = await chrome.storage.session.get(STORAGE_KEYS.token);
   const token = stored[STORAGE_KEYS.token];
-  if (token) {
-    await apiFetch(`${apiBaseUrl}/auth/logout`, {
-      method: "POST",
-      token,
-      body: { revoke: true },
-    }).catch(() => undefined);
-  }
 
+  // Local cleanup happens first so logout immediately removes session material
+  // even if the backend revoke request is slow, offline, or rejected.
   await clearTargetSessionCookies().catch(() => undefined);
   await clearProxySettings().catch(() => undefined);
   await chrome.storage.session.remove([
@@ -607,8 +627,42 @@ async function logout() {
     STORAGE_KEYS.dashboard,
     STORAGE_KEYS.activeLease
   ]);
+  await clearManagedSessionMarker();
   await notifyContentScripts();
+
+  if (token) {
+    await apiFetch(`${apiBaseUrl}/auth/logout`, {
+      method: "POST",
+      token,
+      skipRefresh: true,
+      body: { revoke: true },
+    }).catch(() => undefined);
+  }
+
   return getState();
+}
+
+async function cleanupIfLoggedOut() {
+  const [session, local] = await Promise.all([
+    chrome.storage.session.get([STORAGE_KEYS.token, STORAGE_KEYS.activeLease]),
+    chrome.storage.local.get(STORAGE_KEYS.managedSession),
+  ]);
+  if (session[STORAGE_KEYS.token] || session[STORAGE_KEYS.activeLease]) {
+    return { cleaned: false };
+  }
+
+  if (!local[STORAGE_KEYS.managedSession]) {
+    return { cleaned: false };
+  }
+
+  await clearTargetSessionCookies();
+  await clearProxySettings();
+  await clearManagedSessionMarker();
+  return { cleaned: true };
+}
+
+async function clearManagedSessionMarker() {
+  await chrome.storage.local.remove(STORAGE_KEYS.managedSession).catch(() => undefined);
 }
 
 async function getApiBaseUrl() {
@@ -865,7 +919,8 @@ async function notifyContentScripts() {
 
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ["content/flow-gate.js"]
+        files: ["content/flow-gate.js"],
+        world: "ISOLATED"
       }).catch(() => undefined);
       await chrome.tabs.sendMessage(tab.id, message).catch(() => undefined);
     })

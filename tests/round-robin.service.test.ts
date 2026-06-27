@@ -23,6 +23,8 @@ describe("RoundRobinService", () => {
       zremrangebyscore: vi.fn().mockResolvedValue(0),
       zcard: vi.fn().mockResolvedValue(0),
       set: vi.fn().mockResolvedValue("OK"),
+      zadd: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
       lrem: vi.fn().mockResolvedValue(1),
       del: vi.fn().mockResolvedValue(1),
     };
@@ -37,13 +39,18 @@ describe("RoundRobinService", () => {
       env.SESSION_PREPARE_LOCK_SECONDS,
       "NX",
     );
+    expect(redis.zadd).toHaveBeenCalledWith(
+      "master:master-1:inflight_jobs",
+      expect.any(Number),
+      expect.stringMatching(/^lease-pending:/),
+    );
   });
 
   it("skips a master account when its inflight_jobs capacity is full", async () => {
     const fullAccount = {
       id: "master-full",
       status: "ACTIVE",
-      remainingLimit: 10,
+      remainingLimit: env.PROVIDER_INFLIGHT_JOB_CAPACITY,
       encryptedCookie: "ciphertext",
       cookieNonce: "nonce",
     };
@@ -69,6 +76,8 @@ describe("RoundRobinService", () => {
         .mockResolvedValueOnce(env.PROVIDER_INFLIGHT_JOB_CAPACITY)
         .mockResolvedValueOnce(env.PROVIDER_INFLIGHT_JOB_CAPACITY - 1),
       set: vi.fn().mockResolvedValue("OK"),
+      zadd: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
       lrem: vi.fn().mockResolvedValue(1),
       del: vi.fn().mockResolvedValue(1),
     };
@@ -84,12 +93,7 @@ describe("RoundRobinService", () => {
       env.SESSION_PREPARE_LOCK_SECONDS,
       "NX",
     );
-    expect(redis.set).not.toHaveBeenCalledWith(
-      "master:master-full:lock",
-      "1",
-      "EX",
-      env.SESSION_PREPARE_LOCK_SECONDS,
-      "NX",
-    );
+    expect(redis.del).toHaveBeenCalledWith("master:master-full:lock");
+    expect(redis.zadd).toHaveBeenCalledTimes(1);
   });
 });

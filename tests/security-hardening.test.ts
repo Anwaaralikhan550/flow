@@ -82,6 +82,101 @@ describe("Security Hardening", () => {
       expect(prisma.masterAccount.create).not.toHaveBeenCalled();
     });
 
+    it("saves master proxy settings without exposing the password in the safe response", async () => {
+      const now = new Date();
+      const prisma = {
+        masterAccount: {
+          create: vi.fn().mockImplementation(({ data }) => ({
+            id: "m-proxy",
+            provider: data.provider,
+            email: data.email,
+            status: data.status,
+            dailyLimit: data.dailyLimit,
+            remainingLimit: data.remainingLimit,
+            encryptedCookie: data.encryptedCookie,
+            cookieNonce: data.cookieNonce,
+            vaultVersion: data.vaultVersion,
+            vaultHealth: data.vaultHealth,
+            lastVaultSyncAt: data.lastVaultSyncAt,
+            proxyHost: data.proxyHost,
+            proxyPort: data.proxyPort,
+            proxyUsername: data.proxyUsername,
+            proxyPassword: data.proxyPassword,
+            cooldownUntil: null,
+            lastUsedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        },
+      };
+      const service = new AdminService(prisma as any);
+
+      const result = await service.addMasterAccount(
+        { role: "SUPER_ADMIN" } as any,
+        {
+          provider: "google-flow",
+          email: "proxy@example.com",
+          dailyLimit: 100,
+          proxyHost: " proxy.local ",
+          proxyPort: 9000,
+          proxyUsername: "runner",
+          proxyPassword: "secret",
+        },
+      );
+
+      const createCall = prisma.masterAccount.create.mock.calls[0][0];
+      expect(createCall.data.proxyHost).toBe("proxy.local");
+      expect(createCall.data.proxyPort).toBe(9000);
+      expect(createCall.data.proxyUsername).toBe("runner");
+      expect(createCall.data.proxyPassword).toBe("secret");
+      expect(result.account.proxyHost).toBe("proxy.local");
+      expect(result.account.hasProxyPassword).toBe(true);
+      expect(result.account).not.toHaveProperty("proxyPassword");
+    });
+
+    it("preserves existing proxy password when updating proxy metadata with a blank password", async () => {
+      const now = new Date();
+      const prisma = {
+        masterAccount: {
+          findUnique: vi.fn().mockResolvedValue({ id: "m1", proxyPassword: "saved-secret", deletedAt: null }),
+          update: vi.fn().mockImplementation(({ data }) => ({
+            id: "m1",
+            provider: "google-flow",
+            email: "proxy@example.com",
+            status: "ACTIVE",
+            dailyLimit: 100,
+            remainingLimit: 100,
+            encryptedCookie: "",
+            cookieNonce: "",
+            vaultVersion: 0,
+            vaultHealth: "EMPTY",
+            lastVaultSyncAt: null,
+            cooldownUntil: null,
+            lastUsedAt: null,
+            createdAt: now,
+            updatedAt: now,
+            ...data,
+          })),
+        },
+      };
+      const service = new AdminService(prisma as any);
+
+      const result = await service.updateMasterAccountProxy(
+        { role: "SUPER_ADMIN" } as any,
+        "m1",
+        {
+          proxyHost: "proxy.local",
+          proxyPort: 8001,
+          proxyUsername: "runner",
+          proxyPassword: "",
+        },
+      );
+
+      const updateCall = prisma.masterAccount.update.mock.calls[0][0];
+      expect(updateCall.data.proxyPassword).toBe("saved-secret");
+      expect(result.account.hasProxyPassword).toBe(true);
+    });
+
     it("fails closed on corrupted ciphertext", async () => {
       const account = {
         id: "m1",
@@ -99,6 +194,7 @@ describe("Security Hardening", () => {
       };
       const roundRobin = {
         nextAccount: vi.fn().mockResolvedValue(account),
+        clearCapacityReservation: vi.fn().mockResolvedValue(undefined),
       };
 
       const service = new MasterAccountService(prisma as any, redis as any);
@@ -133,6 +229,8 @@ describe("Security Hardening", () => {
       };
       const roundRobin = {
         nextAccount: vi.fn().mockResolvedValue(account),
+        clearCapacityReservation: vi.fn().mockResolvedValue(undefined),
+        clearInflightJob: vi.fn().mockResolvedValue(undefined),
       };
 
       const service = new MasterAccountService(prisma as any, redis as any);
@@ -171,6 +269,56 @@ describe("Security Hardening", () => {
       });
       expect(redis.set).toHaveBeenCalledWith("session:wait:u1:f1", "1", "EX", 2);
       expect(prisma.masterAccountLease.create).not.toHaveBeenCalled();
+    });
+
+    it("transfers a reserved capacity slot to the created lease", async () => {
+      const encrypted = crypto.encryptCookie(completeVaultData);
+      const expiresAt = new Date(Date.now() + 60_000);
+      const account = {
+        id: "m1",
+        provider: "google-flow",
+        remainingLimit: 20,
+        vaultVersion: 3,
+        encryptedCookie: encrypted.ciphertext,
+        cookieNonce: encrypted.nonce,
+        proxyHost: null,
+        capacityReservationId: "lease-pending:reservation-1",
+        activeJobCount: 7,
+        capacityLimit: 20,
+      };
+      const prisma = {
+        masterAccountLease: {
+          create: vi.fn().mockResolvedValue({ id: "lease-1" }),
+        },
+        masterAccount: {
+          update: vi.fn().mockResolvedValue({ id: "m1" }),
+        },
+      };
+      const redis = {
+        set: vi.fn().mockResolvedValue("OK"),
+        del: vi.fn().mockResolvedValue(1),
+      };
+      const roundRobin = {
+        nextAccount: vi.fn().mockResolvedValue(account),
+        transferCapacityReservation: vi.fn().mockResolvedValue(undefined),
+        clearCapacityReservation: vi.fn().mockResolvedValue(undefined),
+        clearInflightJob: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const service = new MasterAccountService(prisma as any, redis as any);
+      (service as any).roundRobin = roundRobin;
+
+      const response = await service.leaseAccount({ userId: "u1", fingerprintId: "f1" });
+
+      expect(response).toMatchObject({
+        available: true,
+        leaseId: "lease-1",
+        activeJobCount: 7,
+        capacityLimit: 20,
+      });
+      expect(roundRobin.transferCapacityReservation).toHaveBeenCalledWith("m1", "lease-pending:reservation-1", "lease-1");
+      expect(roundRobin.clearCapacityReservation).not.toHaveBeenCalled();
+      expect(redis.del).toHaveBeenCalledWith("master:m1:lock");
     });
 
     it("marks submitted releases as inflight and buffers master reuse for one second", async () => {

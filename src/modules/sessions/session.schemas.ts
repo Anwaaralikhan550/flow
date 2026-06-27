@@ -10,6 +10,8 @@ export const leaseAccountSchema = {
         provider: { type: "string" },
         expiresAt: { type: "string" },
         remainingLimit: { type: "number" },
+        activeJobCount: { type: "number" },
+        capacityLimit: { type: "number" },
         vaultVersion: { type: "number" },
         vaultData: { type: ["string", "null"] },
         proxy: {

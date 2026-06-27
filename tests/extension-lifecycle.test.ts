@@ -2,6 +2,29 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("Extension lease lifecycle hardening", () => {
+  it("keeps compatibility instrumentation out of the production manifest", () => {
+    const manifest = JSON.parse(readFileSync("extension/manifest.json", "utf8"));
+    const compatManifest = JSON.parse(readFileSync("extension/manifest.compat-test.json", "utf8"));
+    const productionScripts = manifest.content_scripts.flatMap((entry: any) => entry.js);
+    const compatScripts = compatManifest.content_scripts.flatMap((entry: any) => entry.js);
+    const flowGateEntry = manifest.content_scripts.find((entry: any) => entry.js.includes("content/flow-gate.js"));
+    const stealthEntry = compatManifest.content_scripts.find((entry: any) => entry.js.includes("content/env-compat-fixture.js"));
+
+    expect(productionScripts).not.toContain("content/env-compat-fixture.js");
+    expect(compatScripts).toContain("content/env-compat-fixture.js");
+    expect(flowGateEntry.world).toBe("ISOLATED");
+    expect(flowGateEntry.all_frames).not.toBe(true);
+    expect(stealthEntry.world).toBe("MAIN");
+    expect(stealthEntry.all_frames).toBe(true);
+  });
+
+  it("keeps dynamic flow-gate fallback in the same isolated world as the manifest", () => {
+    const source = readFileSync("extension/background/service-worker.js", "utf8");
+
+    expect(source).toContain('files: ["content/flow-gate.js"],');
+    expect(source).toContain('world: "ISOLATED"');
+  });
+
   it("releases the backend lease and clears local state when cookie injection fails", () => {
     const source = readFileSync("extension/background/service-worker.js", "utf8");
 
@@ -33,6 +56,8 @@ describe("Extension lease lifecycle hardening", () => {
     expect(source).toContain("autoLeasePromise = chrome.runtime.sendMessage({ type: \"LEASE_ACCOUNT\" })");
     expect(source).toContain('chrome.runtime.sendMessage({ type: "LEASE_ACCOUNT" })');
     expect(source).toContain("response.result?.unavailable");
+    expect(source).toContain("function calculateAutoLeaseRetryDelay(");
+    expect(source).toContain("AUTO_LEASE_RETRY_JITTER_MS");
     expect(source).toContain("void triggerAutoLease()");
     expect(source).toContain("Session cookies are injected on page load; the runner's manual click is native.");
     expect(source).toContain("Let this native click propagate unmodified");
@@ -64,6 +89,47 @@ describe("Extension lease lifecycle hardening", () => {
     expect(source.slice(releaseIndex, cleanupIndex)).toContain("await clearLeaseMetadataOnly()");
     expect(source.slice(reportIndex, source.indexOf("async function openCustomerLink"))).toContain("await clearLeaseMetadataOnly()");
     expect(source.slice(releaseIndex, cleanupIndex)).not.toContain("await clearProxySettings()");
+  });
+
+  it("wipes local session material before backend logout revoke", () => {
+    const source = readFileSync("extension/background/service-worker.js", "utf8");
+    const logoutStart = source.indexOf("async function logout()");
+    const logoutEnd = source.indexOf("async function cleanupIfLoggedOut()");
+    const logoutBody = source.slice(logoutStart, logoutEnd);
+
+    expect(logoutStart).toBeGreaterThan(-1);
+    expect(logoutEnd).toBeGreaterThan(logoutStart);
+    expect(logoutBody.indexOf("await clearTargetSessionCookies().catch")).toBeLessThan(logoutBody.indexOf("/auth/logout"));
+    expect(logoutBody.indexOf("await clearProxySettings().catch")).toBeLessThan(logoutBody.indexOf("/auth/logout"));
+    expect(logoutBody.indexOf("await chrome.storage.session.remove")).toBeLessThan(logoutBody.indexOf("/auth/logout"));
+    expect(logoutBody).toContain("skipRefresh: true");
+  });
+
+  it("self-cleans stale cookies and proxy when the extension wakes without a logged-in session", () => {
+    const source = readFileSync("extension/background/service-worker.js", "utf8");
+
+    expect(source).toContain('managedSession: "managedSessionActive"');
+    expect(source).toContain("chrome.storage.local.set({ [STORAGE_KEYS.managedSession]: true })");
+    expect(source).toContain("cleanupIfLoggedOut().catch(() => undefined)");
+    expect(source).toContain("chrome.runtime.onStartup.addListener");
+    expect(source).toContain("chrome.runtime.onInstalled.addListener");
+    expect(source).toContain("async function cleanupIfLoggedOut()");
+    expect(source).toContain("chrome.storage.local.get(STORAGE_KEYS.managedSession)");
+    expect(source).toContain("if (!local[STORAGE_KEYS.managedSession])");
+    expect(source).toContain("await clearTargetSessionCookies()");
+    expect(source).toContain("await clearProxySettings()");
+    expect(source).toContain("async function clearManagedSessionMarker()");
+  });
+
+  it("removes partitioned target cookies when Chrome returns a partitionKey", () => {
+    const source = readFileSync("extension/background/service-worker.js", "utf8");
+    const removeStart = source.indexOf("async function removeCookie(cookie)");
+    const removeEnd = source.indexOf("function parseVaultCookies", removeStart);
+    const removeBody = source.slice(removeStart, removeEnd);
+
+    expect(removeBody).toContain("if (cookie.partitionKey)");
+    expect(removeBody).toContain("details.partitionKey = cookie.partitionKey");
+    expect(removeBody).toContain("await chrome.cookies.remove(details)");
   });
 
   it("only leaves lite lower-priority Veo variants unlocked while locking premium variants", () => {

@@ -112,6 +112,12 @@ type MasterAccount = {
   vaultVersion: number;
   vaultHealth: string;
   lastVaultSyncAt: string | null;
+  proxyHost: string | null;
+  proxyPort: number | null;
+  proxyUsername: string | null;
+  hasProxyPassword: boolean;
+  activeJobCount: number;
+  capacityLimit: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -227,8 +233,21 @@ export function AdminPanel() {
     dailyLimit: 100,
     remainingLimit: 100,
     vaultData: "",
+    proxyHost: "",
+    proxyPort: 8080,
+    proxyUsername: "",
+    proxyPassword: "",
   });
   const [vaultEditor, setVaultEditor] = useState<{ id: string; email: string; vaultData: string; syncCode: string } | null>(null);
+  const [proxyEditor, setProxyEditor] = useState<{
+    id: string;
+    email: string;
+    proxyHost: string;
+    proxyPort: number;
+    proxyUsername: string;
+    proxyPassword: string;
+    hasProxyPassword: boolean;
+  } | null>(null);
   const [syncCodeDisplay, setSyncCodeDisplay] = useState<{ code: string; expiresAt: string } | null>(null);
   const [keeperKeyDisplay, setKeeperKeyDisplay] = useState<string | null>(null);
   const [planEditor, setPlanEditor] = useState<{ id: string; email: string; plan: Plan; creditsLimit: number } | null>(null);
@@ -560,6 +579,10 @@ export function AdminPanel() {
           dailyLimit: Number(masterForm.dailyLimit),
           remainingLimit: Number(masterForm.remainingLimit),
           vaultData: masterForm.vaultData.trim() ? masterForm.vaultData : null,
+          proxyHost: masterForm.proxyHost.trim() ? masterForm.proxyHost : null,
+          proxyPort: masterForm.proxyHost.trim() ? Number(masterForm.proxyPort) : null,
+          proxyUsername: masterForm.proxyUsername.trim() ? masterForm.proxyUsername : null,
+          proxyPassword: masterForm.proxyPassword.trim() ? masterForm.proxyPassword : null,
         }),
       });
       setMasterForm({
@@ -568,11 +591,44 @@ export function AdminPanel() {
         dailyLimit: 100,
         remainingLimit: 100,
         vaultData: "",
+        proxyHost: "",
+        proxyPort: 8080,
+        proxyUsername: "",
+        proxyPassword: "",
       });
       setNotice({ tone: "success", text: "Master account added to the pool" });
       await loadMasterAccounts();
     } catch (error) {
       setNotice({ tone: "error", text: error instanceof Error ? error.message : "Could not add master account" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveProxySettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!proxyEditor) {
+      return;
+    }
+
+    setLoading(true);
+    setNotice(null);
+
+    try {
+      await apiRequest(`/admin/master-accounts/${proxyEditor.id}/proxy`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          proxyHost: proxyEditor.proxyHost.trim() ? proxyEditor.proxyHost : null,
+          proxyPort: proxyEditor.proxyHost.trim() ? Number(proxyEditor.proxyPort) : null,
+          proxyUsername: proxyEditor.proxyUsername.trim() ? proxyEditor.proxyUsername : null,
+          proxyPassword: proxyEditor.proxyPassword.trim() ? proxyEditor.proxyPassword : null,
+        }),
+      });
+      setProxyEditor(null);
+      setNotice({ tone: "success", text: "Master proxy settings saved" });
+      await loadMasterAccounts();
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : "Could not save proxy settings" });
     } finally {
       setLoading(false);
     }
@@ -1117,6 +1173,17 @@ export function AdminPanel() {
                           key={account.id}
                           account={account}
                           onEditVault={() => setVaultEditor({ id: account.id, email: account.email, vaultData: "", syncCode: "" })}
+                          onEditProxy={() =>
+                            setProxyEditor({
+                              id: account.id,
+                              email: account.email,
+                              proxyHost: account.proxyHost ?? "",
+                              proxyPort: account.proxyPort ?? 8080,
+                              proxyUsername: account.proxyUsername ?? "",
+                              proxyPassword: "",
+                              hasProxyPassword: account.hasProxyPassword,
+                            })
+                          }
                           onGetSyncCode={() => void generateSyncCode(account.id)}
                           onGetKeeperKey={() => void generateKeeperKey(account.id)}
                           onToggleStatus={() => void toggleMasterAccountStatus(account)}
@@ -1148,6 +1215,25 @@ export function AdminPanel() {
                     <Field label="Initial Vault JSON">
                       <textarea className="field-input min-h-32 resize-y font-mono text-xs leading-relaxed" value={masterForm.vaultData} onChange={(event) => setMasterForm((current) => ({ ...current, vaultData: event.target.value }))} placeholder='[{"name":"SID","value":"...","domain":".google.com","path":"/"}]' />
                     </Field>
+                    <div className="rounded-md border border-white/10 bg-black/10 p-3 admin-dark:bg-white/[0.03]">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Residential Proxy</p>
+                      <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
+                        <Field label="Proxy Host">
+                          <input className="field-input" value={masterForm.proxyHost} onChange={(event) => setMasterForm((current) => ({ ...current, proxyHost: event.target.value }))} placeholder="proxy.example.com" />
+                        </Field>
+                        <Field label="Port">
+                          <input className="field-input" type="number" min={1} max={65535} value={masterForm.proxyPort} onChange={(event) => setMasterForm((current) => ({ ...current, proxyPort: Number(event.target.value) }))} />
+                        </Field>
+                      </div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <Field label="Username">
+                          <input className="field-input" value={masterForm.proxyUsername} onChange={(event) => setMasterForm((current) => ({ ...current, proxyUsername: event.target.value }))} />
+                        </Field>
+                        <Field label="Password">
+                          <input className="field-input" type="password" value={masterForm.proxyPassword} onChange={(event) => setMasterForm((current) => ({ ...current, proxyPassword: event.target.value }))} />
+                        </Field>
+                      </div>
+                    </div>
                     <button className="primary-button" disabled={loading}>
                       <Database size={18} />
                       Add Account
@@ -1355,6 +1441,50 @@ export function AdminPanel() {
                 <button className="primary-button" disabled={loading}>
                   {loading ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                   Save Vault
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+
+        {proxyEditor ? (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
+            <form className="w-full max-w-xl rounded-lg border border-white/10 bg-[#0d1118] p-5 shadow-[0_30px_110px_rgba(0,0,0,0.46)]" onSubmit={saveProxySettings}>
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-200">Master Proxy</p>
+                  <h2 className="mt-1 break-all text-xl font-semibold text-white">{proxyEditor.email}</h2>
+                  <p className="mt-1 text-sm text-zinc-500">Leave host empty to remove proxy from this master account.</p>
+                </div>
+                <button className="icon-button" onClick={() => setProxyEditor(null)} type="button" title="Close">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
+                <Field label="Proxy Host">
+                  <input className="field-input" value={proxyEditor.proxyHost} onChange={(event) => setProxyEditor((current) => (current ? { ...current, proxyHost: event.target.value } : current))} placeholder="proxy.example.com" />
+                </Field>
+                <Field label="Port">
+                  <input className="field-input" type="number" min={1} max={65535} value={proxyEditor.proxyPort} onChange={(event) => setProxyEditor((current) => (current ? { ...current, proxyPort: Number(event.target.value) } : current))} />
+                </Field>
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Field label="Username">
+                  <input className="field-input" value={proxyEditor.proxyUsername} onChange={(event) => setProxyEditor((current) => (current ? { ...current, proxyUsername: event.target.value } : current))} />
+                </Field>
+                <Field label={proxyEditor.hasProxyPassword ? "Password (blank keeps saved)" : "Password"}>
+                  <input className="field-input" type="password" value={proxyEditor.proxyPassword} onChange={(event) => setProxyEditor((current) => (current ? { ...current, proxyPassword: event.target.value } : current))} />
+                </Field>
+              </div>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button className="secondary-button" onClick={() => setProxyEditor(null)} type="button">
+                  Cancel
+                </button>
+                <button className="primary-button" disabled={loading}>
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                  Save Proxy
                 </button>
               </div>
             </form>
@@ -1798,6 +1928,7 @@ function AdminRow({ admin, onToggle }: { admin: AdminUser; onToggle: () => void 
 
 function MasterAccountRow({
   account,
+  onEditProxy,
   onEditVault,
   onGetSyncCode,
   onGetKeeperKey,
@@ -1805,6 +1936,7 @@ function MasterAccountRow({
   onDelete,
 }: {
   account: MasterAccount;
+  onEditProxy: () => void;
   onEditVault: () => void;
   onGetSyncCode: () => void;
   onGetKeeperKey: () => void;
@@ -1858,6 +1990,14 @@ function MasterAccountRow({
                 Synced {new Date(account.lastVaultSyncAt).toLocaleString()}
               </span>
             ) : null}
+            <span className="inline-flex items-center gap-1 rounded bg-black/20 px-1.5 py-0.5 font-medium text-zinc-500 admin-dark:bg-white/5">
+              <Activity size={11} />
+              {formatNumber(account.activeJobCount)} / {formatNumber(account.capacityLimit)} active
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded bg-black/20 px-1.5 py-0.5 font-medium admin-dark:bg-white/5 ${account.proxyHost ? "text-emerald-500 admin-dark:text-emerald-300" : "text-zinc-500"}`}>
+              <PlugZap size={11} />
+              {account.proxyHost ? `Proxy ${account.proxyHost}:${account.proxyPort ?? 8080}` : "No proxy"}
+            </span>
           </div>
         </div>
 
@@ -1865,6 +2005,15 @@ function MasterAccountRow({
           <button className="primary-button h-9 justify-center whitespace-nowrap px-3 text-xs" onClick={onGetKeeperKey} type="button" title="Generate a one-paste setup code for the sync extension">
             <RefreshCw size={14} />
             Setup Code
+          </button>
+          <button
+            className="secondary-button h-9 justify-center whitespace-nowrap px-3 text-xs"
+            onClick={onEditProxy}
+            type="button"
+            title="Set residential proxy for this master account"
+          >
+            <PlugZap size={14} />
+            Proxy
           </button>
           <button
             className="secondary-button h-9 justify-center whitespace-nowrap px-3 text-xs"

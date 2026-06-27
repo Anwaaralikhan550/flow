@@ -9,6 +9,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "build:all": "tsx scripts/build-all.ts",
+    "build:extension": "tsx scripts/build-extension-dist.ts",
     "cleanup:customers": "tsx scripts/cleanup-expired-customers.ts",
     "redis:ping": "tsx scripts/check-redis.ts",
     "seed": "prisma db seed",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "javascript-obfuscator": "^5.4.3",
     "prisma": "^6.1.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",

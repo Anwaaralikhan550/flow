@@ -29,6 +29,7 @@ type ReportUsageResult = {
   outcome: ProviderOutcome;
   accepted: true;
   duplicate?: boolean;
+  usageUnits?: number;
 };
 
 export class UsageService {
@@ -55,7 +56,7 @@ export class UsageService {
 
     const expiresAt = new Date(lease.expiresAt);
     if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
-      await this.expireLease(input.leaseId);
+      await this.expireLease(input.leaseId, lease.masterAccountId);
       throw forbidden("Lease has expired", "LEASE_EXPIRED");
     }
 
@@ -230,7 +231,7 @@ export class UsageService {
         await this.roundRobin.removeFromActiveList(result.masterAccountId);
       }
 
-      return { outcome: "SUCCESS", accepted: true };
+      return { outcome: "SUCCESS", accepted: true, usageUnits };
     } catch (error) {
       const duplicate = await this.findDuplicateReportAfterRace(error, leaseId);
       if (duplicate) {
@@ -335,8 +336,11 @@ export class UsageService {
     return env.RATE_LIMIT_COOLDOWN_SECONDS;
   }
 
-  private async expireLease(leaseId: string) {
+  private async expireLease(leaseId: string, masterAccountId?: string) {
     await this.redis.del(`lease:${leaseId}`);
+    if (masterAccountId) {
+      await this.clearInflightJob(masterAccountId, leaseId);
+    }
     await this.prisma.masterAccountLease
       .update({
         where: { id: leaseId },

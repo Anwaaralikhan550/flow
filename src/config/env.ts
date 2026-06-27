@@ -64,7 +64,7 @@ const envSchema = z.object({
   SESSION_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
   LEASE_TTL_SECONDS: z.coerce.number().int().positive().default(150),
   SESSION_PREPARE_LOCK_SECONDS: z.coerce.number().int().positive().default(3),
-  PROVIDER_INFLIGHT_JOB_CAPACITY: z.coerce.number().int().positive().default(3),
+  PROVIDER_INFLIGHT_JOB_CAPACITY: z.coerce.number().int().positive().default(20),
   PROVIDER_INFLIGHT_TTL_SECONDS: z.coerce.number().int().positive().default(120),
   DEVICE_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
   RATE_LIMIT_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(900),

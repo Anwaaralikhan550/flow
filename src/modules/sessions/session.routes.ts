@@ -74,7 +74,7 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
       const result = await service.reportUsage(request.auth, request.body);
       if (result.outcome === "SUCCESS" && !result.duplicate) {
         const billing = new BillingService(app.prisma);
-        await billing.recordSuccessfulPremiumUsage(request.auth);
+        await billing.recordSuccessfulPremiumUsage(request.auth, result.usageUnits);
       }
 
       return result;

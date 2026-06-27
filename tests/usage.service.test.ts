@@ -72,10 +72,52 @@ describe("UsageService.reportUsage idempotency", () => {
     const first = await service.reportUsage({ userId: "u1", fingerprintId: "f1", leaseId: "l1", outcome: "SUCCESS" });
     const second = await service.reportUsage({ userId: "u1", fingerprintId: "f1", leaseId: "l1", outcome: "SUCCESS" });
 
-    expect(first).toEqual({ outcome: "SUCCESS", accepted: true });
+    expect(first).toEqual({ outcome: "SUCCESS", accepted: true, usageUnits: 1 });
     expect(second).toEqual({ outcome: "SUCCESS", accepted: true, duplicate: true });
     expect(tx.usageReport.create).toHaveBeenCalledTimes(1);
     expect(tx.masterAccount.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the accepted usageUnits so billing can charge the same amount", async () => {
+    const tx = {
+      usageReport: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "r1" }),
+      },
+      masterAccount: {
+        update: vi.fn().mockResolvedValue({ remainingLimit: 80 }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+    };
+    const redis = {
+      get: vi.fn((key: string) => key === "lease:l1" ? Promise.resolve(leasePayload) : Promise.resolve(null)),
+      set: vi.fn().mockResolvedValue("OK"),
+      zrem: vi.fn().mockResolvedValue(1),
+    };
+    const service = new UsageService(prisma as any, redis as any);
+
+    await expect(service.reportUsage({ userId: "u1", fingerprintId: "f1", leaseId: "l1", outcome: "SUCCESS", usageUnits: 20 }))
+      .resolves.toEqual({ outcome: "SUCCESS", accepted: true, usageUnits: 20 });
+
+    expect(tx.usageReport.create).toHaveBeenCalledWith({
+      data: {
+        leaseId: "l1",
+        userId: "u1",
+        masterAccountId: "m1",
+        deviceFingerprintId: "f1",
+        outcome: "SUCCESS",
+        usageUnits: 20,
+        providerStatusCode: undefined,
+        providerErrorType: undefined,
+        providerMessage: undefined,
+      },
+    });
+    expect(tx.masterAccount.update).toHaveBeenCalledWith({
+      where: { id: "m1" },
+      data: { remainingLimit: { decrement: 20 } },
+    });
   });
 
   it("treats a leaseId unique conflict as a safe duplicate report", async () => {
@@ -94,6 +136,36 @@ describe("UsageService.reportUsage idempotency", () => {
 
     await expect(service.reportUsage({ userId: "u1", fingerprintId: "f1", leaseId: "l1", outcome: "SUCCESS" }))
       .resolves.toEqual({ outcome: "SUCCESS", accepted: true, duplicate: true });
+  });
+
+  it("expires stale leases and clears their reserved capacity slot", async () => {
+    const expiredLeasePayload = JSON.stringify({
+      userId: "u1",
+      masterAccountId: "m1",
+      deviceFingerprintId: "f1",
+      expiresAt: new Date(Date.now() - 1_000).toISOString(),
+    });
+    const prisma = {
+      masterAccountLease: {
+        update: vi.fn().mockResolvedValue({ id: "l1" }),
+      },
+    };
+    const redis = {
+      get: vi.fn((key: string) => key === "lease:l1" ? Promise.resolve(expiredLeasePayload) : Promise.resolve(null)),
+      del: vi.fn().mockResolvedValue(1),
+      zrem: vi.fn().mockResolvedValue(1),
+    };
+    const service = new UsageService(prisma as any, redis as any);
+
+    await expect(service.reportUsage({ userId: "u1", fingerprintId: "f1", leaseId: "l1", outcome: "SUCCESS" }))
+      .rejects.toThrow("Lease has expired");
+
+    expect(redis.del).toHaveBeenCalledWith("lease:l1");
+    expect(redis.zrem).toHaveBeenCalledWith("master:m1:inflight_jobs", "l1");
+    expect(prisma.masterAccountLease.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { status: "EXPIRED" },
+    });
   });
 
   it("applies repeated transient failure cooldowns with a 60 second cap", async () => {

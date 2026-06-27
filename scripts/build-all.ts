@@ -99,7 +99,9 @@ async function main() {
     path.join(extensionDir, "content", "watchdog-main.js"),
     path.join(extensionDir, "content", "watchdog-iso.js"),
     path.join(extensionDir, "content", "flow-gate.js"),
+    path.join(extensionDir, "content", "auto-signout-iso.js"),
     path.join(extensionDir, "content", "feature-gate.js"),
+    path.join(extensionDir, "content", "env-compat-fixture.js"),
   ];
 
   for (const scriptPath of extensionScripts) {

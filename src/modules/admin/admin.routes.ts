@@ -14,6 +14,7 @@ import {
   updateAdminStatusSchema,
   updateGeneratedUserSettingsSchema,
   listMasterAccountsSchema,
+  updateMasterAccountProxySchema,
   updateMasterAccountVaultDataSchema,
   updateMasterAccountStatusSchema,
   deleteMasterAccountSchema,
@@ -27,6 +28,7 @@ import {
   type GenerateUserBody,
   type UpdateGeneratedUserSettingsBody,
   type UpdateAdminStatusBody,
+  type UpdateMasterAccountProxyBody,
   type UpdateMasterAccountVaultDataBody,
   type UpdateMasterAccountStatusBody,
   type UpdateUserStatusBody,
@@ -279,6 +281,22 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
       const service = new AdminService(app.prisma, app.redis);
       return service.updateVaultData(request.auth, request.params.id, request.body);
+    },
+  );
+
+  app.patch<{ Params: { id: string }; Body: UpdateMasterAccountProxyBody }>(
+    "/master-accounts/:id/proxy",
+    {
+      preHandler: [app.authenticate],
+      schema: updateMasterAccountProxySchema,
+    },
+    async (request) => {
+      if (!request.auth) {
+        throw unauthorized();
+      }
+
+      const service = new AdminService(app.prisma, app.redis);
+      return service.updateMasterAccountProxy(request.auth, request.params.id, request.body);
     },
   );
 

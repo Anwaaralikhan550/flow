@@ -41,10 +41,12 @@ export class MasterAccountService {
           nonce: account.cookieNonce,
         });
       } catch (e) {
+        await this.roundRobin.clearCapacityReservation(account.id, account.capacityReservationId).catch(() => undefined);
         await this.redis.del(`master:${account.id}:lock`);
         throw badRequest("Failed to securely retrieve master account credentials", "VAULT_DECRYPTION_ERROR");
       }
     } else {
+      await this.roundRobin.clearCapacityReservation(account.id, account.capacityReservationId).catch(() => undefined);
       await this.redis.del(`master:${account.id}:lock`);
       throw badRequest("Master account is missing secure credentials", "VAULT_MISSING_CREDENTIALS");
     }
@@ -68,6 +70,8 @@ export class MasterAccountService {
         data: { lastUsedAt: new Date() },
       });
 
+      await this.roundRobin.transferCapacityReservation(account.id, account.capacityReservationId, lease.id);
+
       await this.redis.set(
         `lease:${lease.id}`,
         JSON.stringify({
@@ -79,6 +83,7 @@ export class MasterAccountService {
         "EX",
         env.LEASE_TTL_SECONDS,
       );
+      await this.redis.del(`master:${account.id}:lock`).catch(() => undefined);
 
       return {
         available: true,
@@ -86,6 +91,8 @@ export class MasterAccountService {
         provider: account.provider,
         expiresAt: expiresAt.toISOString(),
         remainingLimit: account.remainingLimit,
+        activeJobCount: account.activeJobCount,
+        capacityLimit: account.capacityLimit,
         vaultVersion: account.vaultVersion,
         vaultData,
         // Proxy metadata is returned only when configured on this account.
@@ -102,8 +109,10 @@ export class MasterAccountService {
       };
     } catch (error) {
       const keys = [`master:${account.id}:lock`];
+      await this.roundRobin.clearCapacityReservation(account.id, account.capacityReservationId).catch(() => undefined);
       if (lease?.id) {
         keys.push(`lease:${lease.id}`);
+        await this.roundRobin.clearInflightJob(account.id, lease.id).catch(() => undefined);
         await this.prisma.masterAccountLease
           .update({
             where: { id: lease.id },
@@ -170,6 +179,7 @@ export class MasterAccountService {
       return;
     }
 
+    await this.roundRobin.clearInflightJob(lease.masterAccountId, leaseId);
     await this.redis.del(`master:${lease.masterAccountId}:lock`, `lease:${leaseId}`);
   }
 }

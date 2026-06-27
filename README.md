@@ -2,7 +2,7 @@
 
 Production-oriented Fastify backend for multi-tenant AI session licensing, RBAC, reseller user generation, request-time subscription expiry, device locking, account leasing, usage reporting, and Redis-backed hot-path state.
 
-This implementation keeps provider cookies server-side. API responses never return raw or encrypted provider cookies.
+Master account session material is encrypted at rest. During a successful authenticated lease, the browser extension receives the decrypted session material only long enough to inject the target workspace cookies into the local browser profile.
 
 ## Setup
 
@@ -55,7 +55,8 @@ For a full root-level integration checklist, see [SYSTEM_CHECKLIST.md](./SYSTEM_
 - JWTs are signed with RS256.
 - JWT `jti` values must exist in Redis or requests are rejected.
 - Device fingerprint must match the JWT and registered device list.
-- Master account cookies are encrypted at rest and are not exposed to clients.
+- Master account cookies are encrypted at rest and are only returned through the authenticated `/session/lease-account` extension flow for the selected lease.
+- Each master account is capped by `PROVIDER_INFLIGHT_JOB_CAPACITY` active in-flight jobs, with excess users receiving retryable lease responses.
 - Subscription expiry is checked at request time in auth/session flows. No cron job is used.
 - User `status` is computed in API responses from `validUntil`: `ACTIVE` when `validUntil > now`, otherwise `EXPIRED`.
 - `isManuallyDisabled` is a hard lock override; session leasing rejects manually disabled users even when their subscription window is still valid.

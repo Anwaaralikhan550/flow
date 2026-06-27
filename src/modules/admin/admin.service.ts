@@ -21,6 +21,15 @@ const dayMs = 24 * 60 * 60 * 1000;
 const generatedUserDefaultsConfigKey = "generated_user_defaults";
 const defaultGeneratedUserValidDays = 30;
 
+type ProxyConfigInput = {
+  proxyHost?: string | null;
+  proxyPort?: number | null;
+  proxyUsername?: string | null;
+  proxyPassword?: string | null;
+};
+
+type ExistingProxyConfig = Pick<MasterAccount, "proxyPassword">;
+
 export class AdminService {
   private readonly roundRobin?: RoundRobinService;
 
@@ -304,9 +313,20 @@ export class AdminService {
       where: { deletedAt: null },
       orderBy: [{ status: "asc" }, { lastUsedAt: "desc" }, { createdAt: "desc" }],
     });
+    const capacityByAccountId = new Map<string, { activeJobCount: number; capacityLimit: number }>();
+    if (this.roundRobin) {
+      await Promise.all(
+        accounts.map(async (account) => {
+          const snapshot = await this.roundRobin?.getCapacitySnapshot(account).catch(() => null);
+          if (snapshot) {
+            capacityByAccountId.set(account.id, snapshot);
+          }
+        }),
+      );
+    }
 
     return {
-      accounts: accounts.map((account) => this.safeMasterAccount(account)),
+      accounts: accounts.map((account) => this.safeMasterAccount(account, capacityByAccountId.get(account.id))),
     };
   }
 
@@ -319,10 +339,11 @@ export class AdminService {
       dailyLimit: number;
       remainingLimit?: number;
       status?: "ACTIVE" | "COOLING_DOWN" | "EXHAUSTED" | "AUTH_INVALID" | "REQUIRES_SYNC" | "DISABLED";
-    },
+    } & ProxyConfigInput,
   ) {
     this.requireRole(actor, [Role.SUPER_ADMIN]);
     const vaultSummary = validateCompleteVaultData(input.vaultData);
+    const proxyConfig = this.normalizeProxyConfig(input);
 
     let encryptedCookie = "";
     let cookieNonce = "";
@@ -347,7 +368,30 @@ export class AdminService {
         status: input.status ? (input.status as MasterAccountStatus) : MasterAccountStatus.ACTIVE,
         dailyLimit: input.dailyLimit,
         remainingLimit: input.remainingLimit ?? input.dailyLimit,
+        ...proxyConfig,
       },
+    });
+
+    return {
+      account: this.safeMasterAccount(account),
+    };
+  }
+
+  async updateMasterAccountProxy(actor: { role: string }, id: string, input: ProxyConfigInput) {
+    this.requireRole(actor, [Role.SUPER_ADMIN]);
+
+    const existing = await this.prisma.masterAccount.findUnique({
+      where: { id },
+      select: { id: true, proxyPassword: true, deletedAt: true },
+    });
+
+    if (!existing || existing.deletedAt) {
+      throw notFound("Master account was not found", "MASTER_ACCOUNT_NOT_FOUND");
+    }
+
+    const account = await this.prisma.masterAccount.update({
+      where: { id },
+      data: this.normalizeProxyConfig(input, existing),
     });
 
     return {
@@ -816,7 +860,7 @@ export class AdminService {
     }
   }
 
-  private safeMasterAccount(account: MasterAccount) {
+  private safeMasterAccount(account: MasterAccount, capacity?: { activeJobCount: number; capacityLimit: number }) {
     return {
       id: account.id,
       provider: account.provider,
@@ -830,9 +874,51 @@ export class AdminService {
       vaultVersion: account.vaultVersion,
       vaultHealth: account.vaultHealth,
       lastVaultSyncAt: account.lastVaultSyncAt?.toISOString() ?? null,
+      proxyHost: account.proxyHost,
+      proxyPort: account.proxyPort,
+      proxyUsername: account.proxyUsername,
+      hasProxyPassword: Boolean(account.proxyPassword),
+      activeJobCount: capacity?.activeJobCount ?? 0,
+      capacityLimit: capacity?.capacityLimit ?? Math.min(env.PROVIDER_INFLIGHT_JOB_CAPACITY, Math.max(0, account.remainingLimit)),
       createdAt: account.createdAt.toISOString(),
       updatedAt: account.updatedAt.toISOString(),
     };
+  }
+
+  private normalizeProxyConfig(input: ProxyConfigInput, existing?: ExistingProxyConfig) {
+    const proxyHost = this.cleanOptionalString(input.proxyHost);
+    if (!proxyHost) {
+      return {
+        proxyHost: null,
+        proxyPort: null,
+        proxyUsername: null,
+        proxyPassword: null,
+      };
+    }
+
+    const proxyUsername = this.cleanOptionalString(input.proxyUsername);
+    const incomingPassword = this.cleanOptionalString(input.proxyPassword);
+    const proxyPassword = proxyUsername ? incomingPassword ?? existing?.proxyPassword ?? null : null;
+
+    if (proxyUsername && !proxyPassword) {
+      throw badRequest("Proxy username and password must be provided together", "INVALID_PROXY_CONFIG");
+    }
+
+    return {
+      proxyHost,
+      proxyPort: input.proxyPort ?? null,
+      proxyUsername,
+      proxyPassword,
+    };
+  }
+
+  private cleanOptionalString(value: string | null | undefined) {
+    if (typeof value !== "string") {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
   }
 
   private safeUserSelect() {
