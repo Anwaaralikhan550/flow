@@ -219,6 +219,22 @@ describe("Extension lease lifecycle hardening", () => {
     expect(manifest.permissions).not.toContain("activeTab");
   });
 
+  it("restores admin auto-sync alarms after browser restarts", () => {
+    const backgroundSource = readFileSync("admin-sync-extension/background.js", "utf8");
+    const popupSource = readFileSync("admin-sync-extension/popup.js", "utf8");
+
+    expect(backgroundSource).toContain("const AUTO_SYNC_PERIOD_MINUTES = 30");
+    expect(backgroundSource).toContain("const AUTO_SYNC_RETRY_MINUTES = 5");
+    expect(popupSource).toContain("const AUTO_SYNC_PERIOD_MINUTES = 30");
+    expect(backgroundSource).toContain("void ensureAutoSyncAlarm()");
+    expect(backgroundSource).toContain("chrome.runtime.onStartup.addListener");
+    expect(backgroundSource).toContain("chrome.runtime.onInstalled.addListener");
+    expect(backgroundSource).toContain("chrome.alarms.get(AUTO_SYNC_ALARM)");
+    expect(backgroundSource).toContain("periodInMinutes: AUTO_SYNC_PERIOD_MINUTES");
+    expect(backgroundSource).toContain("delayInMinutes: 1");
+    expect(backgroundSource).toContain("delayInMinutes: AUTO_SYNC_RETRY_MINUTES");
+  });
+
   it("replaces the manual admin-sync fields with a single setup-code flow", () => {
     const popupSource = readFileSync("admin-sync-extension/popup.js", "utf8");
     const popupHtml = readFileSync("admin-sync-extension/popup.html", "utf8");

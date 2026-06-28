@@ -66,6 +66,7 @@ const envSchema = z.object({
   SESSION_PREPARE_LOCK_SECONDS: z.coerce.number().int().positive().default(3),
   PROVIDER_INFLIGHT_JOB_CAPACITY: z.coerce.number().int().positive().default(20),
   PROVIDER_INFLIGHT_TTL_SECONDS: z.coerce.number().int().positive().default(120),
+  MASTER_VAULT_MAX_AGE_SECONDS: z.coerce.number().int().positive().default(43_200),
   DEVICE_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
   RATE_LIMIT_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(900),
   CLUSTER_WORKERS: z.coerce.number().int().min(0).default(0),

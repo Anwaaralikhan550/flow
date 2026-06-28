@@ -10,6 +10,8 @@ describe("RoundRobinService", () => {
       remainingLimit: 10,
       encryptedCookie: "ciphertext",
       cookieNonce: "nonce",
+      vaultHealth: "COMPLETE",
+      lastVaultSyncAt: new Date(),
     };
     const prisma = {
       masterAccount: {
@@ -53,6 +55,8 @@ describe("RoundRobinService", () => {
       remainingLimit: env.PROVIDER_INFLIGHT_JOB_CAPACITY,
       encryptedCookie: "ciphertext",
       cookieNonce: "nonce",
+      vaultHealth: "COMPLETE",
+      lastVaultSyncAt: new Date(),
     };
     const openAccount = {
       ...fullAccount,
@@ -95,5 +99,49 @@ describe("RoundRobinService", () => {
     );
     expect(redis.del).toHaveBeenCalledWith("master:master-full:lock");
     expect(redis.zadd).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips a cached active-list master when its vault sync is stale", async () => {
+    const staleAccount = {
+      id: "master-stale",
+      status: "ACTIVE",
+      remainingLimit: 10,
+      encryptedCookie: "ciphertext",
+      cookieNonce: "nonce",
+      vaultHealth: "COMPLETE",
+      lastVaultSyncAt: new Date(Date.now() - (env.MASTER_VAULT_MAX_AGE_SECONDS + 60) * 1000),
+    };
+    const freshAccount = {
+      ...staleAccount,
+      id: "master-fresh",
+      lastVaultSyncAt: new Date(),
+    };
+    const prisma = {
+      masterAccount: {
+        findUnique: vi.fn((input: { where: { id: string } }) =>
+          Promise.resolve(input.where.id === "master-fresh" ? freshAccount : staleAccount),
+        ),
+      },
+    };
+    const redis = {
+      lrange: vi.fn().mockResolvedValue(["master-stale", "master-fresh"]),
+      incr: vi.fn()
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(1),
+      exists: vi.fn().mockResolvedValue(0),
+      zremrangebyscore: vi.fn().mockResolvedValue(0),
+      zcard: vi.fn().mockResolvedValue(0),
+      set: vi.fn().mockResolvedValue("OK"),
+      zadd: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
+      lrem: vi.fn().mockResolvedValue(1),
+      del: vi.fn().mockResolvedValue(1),
+    };
+
+    const service = new RoundRobinService(prisma as never, redis as never);
+    const account = await service.nextAccount();
+
+    expect(account?.id).toBe("master-fresh");
+    expect(redis.lrem).toHaveBeenCalledWith("master:active:list", 0, "master-stale");
   });
 });

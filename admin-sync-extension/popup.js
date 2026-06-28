@@ -1,5 +1,5 @@
 const AUTO_SYNC_ALARM = 'keeperAutoSync';
-const AUTO_SYNC_PERIOD_MINUTES = 180;
+const AUTO_SYNC_PERIOD_MINUTES = 30;
 
 void restoreFields();
 attachKeeperControls();

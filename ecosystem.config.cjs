@@ -16,6 +16,23 @@ module.exports = {
       listen_timeout: 8000,
     },
     {
+      name: "flow-keeper",
+      cwd: "./keeper",
+      script: "../node_modules/.bin/tsx",
+      args: "index.ts",
+      interpreter: "none",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "1G",
+      env: {
+        NODE_ENV: "production",
+        ROTATION_INTERVAL_MS: "120000",
+      },
+      exp_backoff_restart_delay: 100,
+      kill_timeout: 8000,
+      listen_timeout: 10000,
+    },
+    {
       name: "vidgen-landing",
       cwd: "./landing",
       script: ".next/standalone/server.js",

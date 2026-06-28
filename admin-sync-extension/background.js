@@ -5,12 +5,44 @@ const NEXT_AUTH_COOKIE_NAMES = [
     '__Secure-next-auth.session-token',
 ];
 const AUTO_SYNC_ALARM = 'keeperAutoSync';
+const AUTO_SYNC_PERIOD_MINUTES = 30;
+const AUTO_SYNC_RETRY_MINUTES = 5;
+
+void ensureAutoSyncAlarm();
+
+if (chrome.runtime.onStartup) {
+    chrome.runtime.onStartup.addListener(() => {
+        void ensureAutoSyncAlarm();
+    });
+}
+
+if (chrome.runtime.onInstalled) {
+    chrome.runtime.onInstalled.addListener(() => {
+        void ensureAutoSyncAlarm();
+    });
+}
 
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === AUTO_SYNC_ALARM) {
         void runKeeperSyncIfEnabled();
     }
 });
+
+async function ensureAutoSyncAlarm() {
+    const { autoSyncEnabled } = await chrome.storage.local.get(['autoSyncEnabled']);
+    if (!autoSyncEnabled) {
+        await chrome.alarms.clear(AUTO_SYNC_ALARM);
+        return;
+    }
+
+    const existing = await chrome.alarms.get(AUTO_SYNC_ALARM);
+    if (!existing) {
+        chrome.alarms.create(AUTO_SYNC_ALARM, {
+            periodInMinutes: AUTO_SYNC_PERIOD_MINUTES,
+            delayInMinutes: 1,
+        });
+    }
+}
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'SYNC_NOW') {
@@ -26,7 +58,13 @@ async function runKeeperSyncIfEnabled() {
     if (!autoSyncEnabled) {
         return;
     }
-    await runKeeperSync();
+    const result = await runKeeperSync();
+    if (!result?.ok) {
+        chrome.alarms.create(AUTO_SYNC_ALARM, {
+            periodInMinutes: AUTO_SYNC_PERIOD_MINUTES,
+            delayInMinutes: AUTO_SYNC_RETRY_MINUTES,
+        });
+    }
 }
 
 async function runKeeperSync() {

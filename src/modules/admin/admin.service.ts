@@ -861,6 +861,8 @@ export class AdminService {
   }
 
   private safeMasterAccount(account: MasterAccount, capacity?: { activeJobCount: number; capacityLimit: number }) {
+    const vaultHealth = this.resolveVaultHealth(account);
+
     return {
       id: account.id,
       provider: account.provider,
@@ -872,7 +874,7 @@ export class AdminService {
       lastUsedAt: account.lastUsedAt?.toISOString() ?? null,
       hasVaultData: Boolean(account.encryptedCookie && account.cookieNonce),
       vaultVersion: account.vaultVersion,
-      vaultHealth: account.vaultHealth,
+      vaultHealth,
       lastVaultSyncAt: account.lastVaultSyncAt?.toISOString() ?? null,
       proxyHost: account.proxyHost,
       proxyPort: account.proxyPort,
@@ -883,6 +885,18 @@ export class AdminService {
       createdAt: account.createdAt.toISOString(),
       updatedAt: account.updatedAt.toISOString(),
     };
+  }
+
+  private resolveVaultHealth(account: MasterAccount) {
+    if (
+      account.vaultHealth === "COMPLETE" &&
+      account.lastVaultSyncAt &&
+      account.lastVaultSyncAt.getTime() < Date.now() - env.MASTER_VAULT_MAX_AGE_SECONDS * 1000
+    ) {
+      return "STALE";
+    }
+
+    return account.vaultHealth;
   }
 
   private normalizeProxyConfig(input: ProxyConfigInput, existing?: ExistingProxyConfig) {

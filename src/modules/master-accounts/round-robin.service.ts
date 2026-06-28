@@ -37,6 +37,14 @@ function hasUsableVaultData(vaultData?: string | null) {
   }
 }
 
+function hasFreshVault(account: MasterAccount) {
+  if (account.vaultHealth !== "COMPLETE" || !account.lastVaultSyncAt) {
+    return false;
+  }
+
+  return account.lastVaultSyncAt.getTime() >= Date.now() - env.MASTER_VAULT_MAX_AGE_SECONDS * 1000;
+}
+
 export class RoundRobinService {
   private readonly repository: MasterAccountRepository;
 
@@ -76,7 +84,14 @@ export class RoundRobinService {
       }
 
       const account = await this.repository.findById(id);
-      if (!account || account.status !== "ACTIVE" || account.remainingLimit <= 0 || !account.encryptedCookie || !account.cookieNonce) {
+      if (
+        !account ||
+        account.status !== "ACTIVE" ||
+        account.remainingLimit <= 0 ||
+        !account.encryptedCookie ||
+        !account.cookieNonce ||
+        !hasFreshVault(account)
+      ) {
         await this.redis.lrem(ACTIVE_LIST_KEY, 0, id);
         await this.redis.del(`master:${id}:lock`);
         continue;

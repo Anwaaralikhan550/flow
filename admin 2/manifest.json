@@ -1,0 +1,120 @@
+{
+  "manifest_version": 3,
+  "name": "Flow — Google Flow Access (Beta)",
+  "version": "3.0.48",
+  "description": "Injects managed sessions on Google Flow with credit tracking, media detection, and session isolation.",
+  "permissions": [
+    "cookies",
+    "tabs",
+    "storage",
+    "activeTab",
+    "scripting",
+    "management",
+    "browsingData"
+  ],
+  "host_permissions": [
+    "https://labs.google/*",
+    "https://*.labs.google/*",
+    "https://*.flowcreatorai.site/*",
+    "https://*.lovable.dev/*",
+    "https://*.lovable.app/*",
+    "https://flowcreatorai.site/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*",
+        "https://labs.google/fx/api/auth/signout*"
+      ],
+      "js": [
+        "persistent_lock.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
+      "js": [
+        "ext_watchdog_main.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
+      "js": [
+        "ext_watchdog_iso.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
+      "js": [
+        "model_lock.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/api/auth/signout*"
+      ],
+      "js": [
+        "auto_signout.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/api/auth/signout*"
+      ],
+      "js": [
+        "auto_signout.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://*.flowcreatorai.site/*",
+        "https://*.lovable.dev/*",
+        "https://*.lovable.app/*",
+        "https://flowcreatorai.site/*"
+      ],
+      "js": [
+        "site_bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

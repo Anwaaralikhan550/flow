@@ -1,0 +1,12 @@
+[
+  {
+    "masterAccountId": "replace-with-cuid-from-db",
+    "keeperKey": "replace-with-40-char-key-from-admin-panel",
+    "setupCode": "replace-with-base64-setup-code",
+    "proxy": {
+      "server": "http://proxy-host:port",
+      "username": "proxy-user",
+      "password": "proxy-pass"
+    }
+  }
+]

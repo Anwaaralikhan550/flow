@@ -1,4 +1,5 @@
 import { type MasterAccount, MasterAccountStatus, type PrismaClient } from "@prisma/client";
+import { env } from "../../config/env.js";
 
 export class MasterAccountRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -22,6 +23,8 @@ export class MasterAccountRepository {
   }
 
   findLeasableAccounts() {
+    const vaultFreshAfter = new Date(Date.now() - env.MASTER_VAULT_MAX_AGE_SECONDS * 1000);
+
     return this.prisma.masterAccount.findMany({
       where: {
         status: MasterAccountStatus.ACTIVE,
@@ -34,6 +37,10 @@ export class MasterAccountRepository {
         },
         cookieNonce: {
           not: "",
+        },
+        vaultHealth: "COMPLETE",
+        lastVaultSyncAt: {
+          gte: vaultFreshAfter,
         },
         OR: [{ cooldownUntil: null }, { cooldownUntil: { lt: new Date() } }],
       },

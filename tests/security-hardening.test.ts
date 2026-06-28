@@ -354,7 +354,7 @@ describe("Security Hardening", () => {
 
     it("accepts accounts with encrypted fields as leasable", async () => {
       const accounts = [
-        { id: "m1", encryptedCookie: "c1", cookieNonce: "n1" }
+        { id: "m1", encryptedCookie: "c1", cookieNonce: "n1", vaultHealth: "COMPLETE", lastVaultSyncAt: new Date() }
       ];
       const prisma = {
         masterAccount: {
@@ -368,7 +368,9 @@ describe("Security Hardening", () => {
       expect(prisma.masterAccount.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: expect.objectContaining({
           encryptedCookie: { not: "" },
-          cookieNonce: { not: "" }
+          cookieNonce: { not: "" },
+          vaultHealth: "COMPLETE",
+          lastVaultSyncAt: { gte: expect.any(Date) },
         })
       }));
     });
